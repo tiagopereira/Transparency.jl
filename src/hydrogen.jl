@@ -599,7 +599,7 @@ Compute extinction from Rayleigh scattering from H atoms. Uses recipe from
 Dalgarno (1962), Geophysics Corp. of America, Technical Report No. 62-28-A
 (unavailable), which is accurate to 1% for λ > 125.0 nm.
 """
-function rayleigh_h(λ::Unitful.Length, h_ground_pop::NumberDensity)
+function rayleigh_h(λ::Unitful.Length, h_pop::NumberDensity)
     λi = ustrip(λ |> u"Å")
     if λi >= 1215.7 
         λ2 = 1 / λi^2
@@ -608,5 +608,5 @@ function rayleigh_h(λ::Unitful.Length, h_ground_pop::NumberDensity)
     else
         σ_h = 0.0u"m^2" 
     end
-    σ_h * h_ground_pop
+    σ_h * h_pop
 end
