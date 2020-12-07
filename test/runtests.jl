@@ -2,6 +2,7 @@ using Test
 using Transparency
 using Unitful
 import PhysicalConstants.CODATA2018: h, k_B, R_∞, c_0, m_e, e, ε_0
+using SpecialFunctions: erfcx
 
 @testset "Thomson" begin
     @test thomson(1.e29u"m^-3") ≈ 6.652458732173518u"m^-1"
@@ -81,5 +82,25 @@ end
         @test rayleigh_h(100u"nm", 1u"m^-3") == 0.0u"m^-1"
         @test all(rayleigh_h.(λ, 1e30u"m^-3") ≈ [
             6.946808203124999, 0.04804975738502133, 0.00036536185226953123]u"m^-1")
+    end
+end
+
+@testset "Voigt" begin
+    a = im .* 10 .^LinRange(-4, -0.3, 20)'
+    v = 10 .^LinRange(-1, 2, 20)'
+    z = a' .+ hcat(-v, v)
+    @testset "humlicek" begin
+        # Test against more precise erfcx function
+        @test isapprox(humlicek.(z), erfcx.(-im .* z), rtol=1e-4)
+        @test humlicek(im * 0) == 1.
+        @test_throws MethodError humlicek(0.)
+    end
+    @testset "profiles" begin
+        wave = 1u"nm"
+        @test ustrip(voigt_profile(0.1, 0.5, wave)) ≈ real(humlicek(0.5 + 0.1 *im)) / sqrt(π)
+        @test ustrip(dispersion_profile(0.1, 0.5, wave)) ≈ imag(humlicek(0.5 + 0.1 *im)) / sqrt(π)
+        # Symmetry / anti-symmetry
+        @test voigt_profile.(0.1, v, wave) == voigt_profile.(0.1, -v, wave)
+        @test dispersion_profile.(0.1, v, wave) == -dispersion_profile.(0.1, -v, wave)
     end
 end
