@@ -456,14 +456,15 @@ end
 #=----------------------------------------------------------------------------
                             Recipes from Bates (1952)
 ----------------------------------------------------------------------------=#
-const bates_λ = 1e7 ./ [   500,   1000,   1500,   2000,   2500,   3000,
+const bates_λ = 1f7 ./ [   500,   1000,   1500,   2000,   2500,   3000,
                           3500,   4000,   5000,   6000,   7000,   8000,
                           9000, 10_000, 12_000, 14_000, 16_000, 18_000,
-                        20_000, 22_000, 24_000, 26_000,    Inf]  # in nm
-const bates_t = [2.5e+03, 3.0e+03, 3.5e+03, 4.0e+03, 5.0e+03, 
-                    6.0e+03, 7.0e+03, 8.0e+03, 1.0e+04, 1.2e+04]  # in K
+                        20_000, 22_000, 24_000, 26_000,  Inf32]  # in nm
+const bates_t = [2.5f+03, 3.0f+03, 3.5f+03, 4.0f+03, 5.0f+03, 
+                    6.0f+03, 7.0f+03, 8.0f+03, 1.0f+04, 1.2f+04]  # in K
 # H2plus bf + ff extinction coefficient in 1e-49 m^5
-const bates_κ = [  1.14  0.94  0.80  0.69  0.55  0.46  0.39  0.34  0.27  0.226
+const bates_κ = convert(Array{Float32, 2},
+                [  1.14  0.94  0.80  0.69  0.55  0.46  0.39  0.34  0.27  0.226
                    1.61  1.32  1.12  0.97  0.77  0.63  0.54  0.47  0.38  0.31
                    1.97  1.60  1.35  1.17  0.92  0.76  0.64  0.56  0.44  0.37
                    2.28  1.83  1.53  1.32  1.03  0.85  0.72  0.63  0.50  0.41
@@ -485,8 +486,8 @@ const bates_κ = [  1.14  0.94  0.80  0.69  0.55  0.46  0.39  0.34  0.27  0.226
                   64.   24.3  12.2   7.3   3.5   2.16  1.52  1.16  0.79  0.60
                   86.   31.   14.6   8.4   3.8   2.29  1.57  1.18  0.79  0.59
                  114.   38.   17.3   9.6   4.2   2.42  1.63  1.21  0.79  0.58
-                   0.    0.    0.    0.    0.    0.    0.    0.    0.    0.  ]
-const bates_bf_fraction = 
+                   0.    0.    0.    0.    0.    0.    0.    0.    0.    0.  ])
+const bates_bf_fraction = convert(Array{Float32, 2},
         [0.059  0.046  0.037  0.031  0.022  0.017  0.014  0.011  0.008  0.006
          0.135  0.107  0.087  0.072  0.053  0.041  0.033  0.027  0.020  0.015
          0.214  0.171  0.141  0.118  0.088  0.069  0.056  0.046  0.034  0.026
@@ -509,7 +510,7 @@ const bates_bf_fraction =
          0.991  0.978  0.960  0.936  0.879  0.816  0.754  0.695  0.593  0.510
          0.994  0.984  0.969  0.949  0.898  0.841  0.782  0.726  0.625  0.541
          0.996  0.988  0.976  0.959  0.914  0.862  0.806  0.752  0.653  0.569
-         0.     0.     0.     0.     0.     0.     0.     0.     0.     0.   ]
+         0.     0.     0.     0.     0.     0.     0.     0.     0.     0.   ])
 const bates_ff_fraction = 1 .- bates_bf_fraction
 const bates_ff_κ = bates_κ .* bates_ff_fraction
 const bates_bf_κ = bates_κ .* bates_bf_fraction
@@ -528,10 +529,11 @@ page 43.
 """
 function h2plus_ff(λ::Unitful.Length, temperature::Unitful.Temperature,
                    h_ground_pop::NumberDensity, proton_density::NumberDensity)
-    λi = ustrip(λ |> u"nm")   # convert to units of table
-    temp = ustrip(temperature |> u"K")
-    κ = bates_ff_interp(λi, temp)::Float64 * 1e-49u"m^5" 
-    h_ground_pop * proton_density * κ 
+    λi = convert(Float32, ustrip(λ |> u"nm"))   # convert to units of table
+    temp = convert(Float32, ustrip(temperature |> u"K"))
+    κ = bates_ff_interp(λi, temp)::Float32 * u"m^5" 
+    # Table in 1e-49 m^5, splitting in two to prevent overflow in Float32 inputs
+    κ * (h_ground_pop * 1f-25) * (proton_density * 1f-24) 
 end
 
 """
@@ -544,12 +546,12 @@ page 43.
 """
 function h2plus_bf(λ::Unitful.Length, temperature::Unitful.Temperature,
                    h_ground_pop::NumberDensity, proton_density::NumberDensity)
-    λi = ustrip(λ |> u"nm")   # convert to units of table
-    temp = ustrip(temperature |> u"K")
-    κ = bates_bf_interp(λi, temp)::Float64 * 1e-49u"m^5" 
-    h_ground_pop * proton_density * κ 
+    λi = convert(Float32, ustrip(λ |> u"nm"))  # convert to units of table
+    temp = convert(Float32, ustrip(temperature |> u"K"))
+    κ = bates_bf_interp(λi, temp)::Float32 * u"m^5" 
+    # Table in 1e-49 m^5, splitting in two to prevent overflow in Float32 inputs
+    κ * (h_ground_pop * 1f-25) * (proton_density * 1f-24)
 end
-
 
 #=----------------------------------------------------------------------------
                   Recipes from Victor & Dalgarno (1969)
@@ -599,7 +601,7 @@ Compute extinction from Rayleigh scattering from H atoms. Uses recipe from
 Dalgarno (1962), Geophysics Corp. of America, Technical Report No. 62-28-A
 (unavailable), which is accurate to 1% for λ > 125.0 nm.
 """
-function rayleigh_h(λ::Unitful.Length, h_pop::NumberDensity)
+function rayleigh_h(λ::Unitful.Length, h_ground_pop::NumberDensity)
     λi = ustrip(λ |> u"Å")
     if λi >= 1215.7 
         λ2 = 1 / λi^2
@@ -608,5 +610,5 @@ function rayleigh_h(λ::Unitful.Length, h_pop::NumberDensity)
     else
         σ_h = 0.0u"m^2" 
     end
-    σ_h * h_pop
+    σ_h * h_ground_pop
 end

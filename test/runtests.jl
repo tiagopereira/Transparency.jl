@@ -63,14 +63,14 @@ end
             4.17, 80.60, 14700]u"m^-1")
     end
     @testset "h2plus" begin
-        λ = 1e7u"nm" ./ [500, 4000, 26_000]
+        λ = 1f7u"nm" ./ [500, 4000, 26_000]
         temp = [12_000, 5000, 2500]u"K"
         # Test opacity table directly, sum of bf and ff
-        κ_total = h2plus_ff.(λ, temp, 1e49u"m^-3", 1u"m^-3") .+
-                  h2plus_bf.(λ, temp, 1e49u"m^-3", 1u"m^-3")
+        κ_total = h2plus_ff.(λ, temp, 1f25u"m^-3", 1f24u"m^-3") .+
+                  h2plus_bf.(λ, temp, 1f25u"m^-3", 1f24u"m^-3")
         @test all(κ_total ≈ [0.226, 1.35, 114.]u"m^-1")
         # Test bf fraction table
-        @test all(h2plus_bf.(λ, temp, 1e49u"m^-3", 1u"m^-3") ./ 
+        @test all(h2plus_bf.(λ, temp, 1f25u"m^-3", 1f24u"m^-3") ./ 
                         κ_total ≈ [0.006, 0.273, 0.996])
     end
     @testset "rayleigh" begin
