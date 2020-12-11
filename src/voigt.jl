@@ -1,5 +1,5 @@
 """
-Computes quantities associated with line extinction.
+Computes line profiles and associated quantities.
 """
 
 const invSqrtPi = 1. / sqrt(π)
@@ -70,5 +70,5 @@ Compute Doppler width for wavelength ΔλD, given a wavelength λ0,
 mass of atom/ion, and temperature.
 """
 function doppler_width(λ0::Unitful.Length, mass::Unitful.Mass, temperature::Unitful.Temperature)
-    λ0 / c_0 * sqrt(2 * k_B * temperature / mass)
+    (λ0 / c_0 * sqrt(2 * k_B * temperature / mass)) |> u"nm"
 end

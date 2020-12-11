@@ -104,3 +104,42 @@ end
         @test dispersion_profile.(0.1, v, wave) == -dispersion_profile.(0.1, -v, wave)
     end
 end
+
+@testset "Broadening" begin
+    line = AtomicLine(1.1u"aJ", 1.0u"aJ", 1.5u"aJ", 18, 8, 1.0, 1.0u"kg", 1)
+    # Testing against implementation
+    @test isapprox(γ_unsold_const(line), 1.1131993895644783e-15, rtol=1e-15)
+    @test all(γ_unsold.(1.0, 1u"K", [1, 2]u"m^-3") ≈ [1, 2]u"s^-1")
+    @test γ_unsold(1.0, 1000u"K", 1u"m^-3") ≈ (1000^0.3)u"s^-1"
+    @test calc_Aji(1u"m", ustrip(ε_0 * m_e * c_0), 1 / ustrip(2π * e^2)) ≈ 1u"s^-1"
+    @test calc_Bji(1u"m", 0u"Hz") ≈ 0u"m^3 / J"
+    @test calc_Bji(1000u"nm", 1e9u"Hz") ≈ 8.396002689872053e-6u"m^3 / J"
+    @test damping(1u"Hz", 1u"m", 1u"m") ≈ ustrip(1 / (4π * c_0))
+end
+
+@testset "Line" begin
+    line = AtomicLine(1.39728917u"aJ", 1.0u"aJ", 1.5u"aJ", 1, 1, 1.0, 1.0u"kg", 1)
+    @testset "AtomicLine" begin
+        @test line.λ0 ≈ 500u"nm"
+        @test_throws MethodError AtomicLine(1.1u"aJ", 1u"aJ", 1.5u"aJ", 1, 1, 1.0, 1.0u"kg", 1)
+        @test_throws AssertionError AtomicLine(.0u"aJ", .0u"aJ", .5u"aJ", 1, 1, 1.0, .1u"kg", 1)
+    end
+    @test αline_λ(line, 1u"m^-1", 1u"m^-3", 1u"m^-3") == 0u"m^-1"
+    # Testing against implementation
+    @test αline_λ(line, 1u"nm^-1", 1e17u"m^-3", 1e18u"m^-3") ≈ 1.9918846554254643u"m^-1"
+    @test jline_λ(line, 1u"m^-1", 1e21u"m^-3") ≈ 8.435271743930054u"W / (m^3 * nm)"
+    @testset "Blackbody" begin
+        λ = 500.0u"nm"
+        @test blackbody_λ(λ, 5000u"K") ≈ 12.107190590398108u"kW / (m^2 * nm)"
+        @test blackbody_ν(c_0 / λ, 5000u"K") ≈ 10.096310186694323u"nW / (m^2 * Hz)"
+        @test blackbody_λ(λ, 5000u"K") ≈ blackbody_ν(c_0 / λ, 5000u"K") * c_0 / λ^2
+    end
+    @testset "Intensity" begin
+        dist = collect(LinRange(0, 100, 1001))u"m"
+        ext = ones(1001)u"m^-1"
+        S = ones(1001)u"kW / (m^2 * nm)"
+        @test isapprox(calc_intensity(dist, ext, S), 1u"kW / (m^2 * nm)",
+                       atol=1e-3u"kW / (m^2 * nm)")
+        @test_throws AssertionError calc_intensity(-dist, ext, S)
+    end
+end
