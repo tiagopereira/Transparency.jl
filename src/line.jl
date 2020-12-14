@@ -21,9 +21,12 @@ struct AtomicLine{T <: AbstractFloat}
     χ∞::Unitful.Energy{T}  
     atom_weight::Unitful.Mass{T}
     Z::Int
-    function AtomicLine(χu::Unitful.Energy{T}, χl::Unitful.Energy{T},
-                        χ∞::Unitful.Energy{T}, gu::Int, gl::Int, f_value::T,
-                        atom_weight::Unitful.Mass{T}, Z::Int)  where T <: AbstractFloat
+    function AtomicLine(χu::Quantity{T}, χl::Quantity{T}, χ∞::Quantity{T}, 
+                        gu::Int, gl::Int, f_value::T, atom_weight::Unitful.Mass{T},
+                        Z::Int)  where T <: AbstractFloat
+        χu = wavenumber_to_energy(χu)
+        χl = wavenumber_to_energy(χl)
+        χ∞ = wavenumber_to_energy(χ∞)
         # Add conversion from cm^-1 to aJ, if type of χu is L^-1
         @assert χ∞ > χu
         @assert χu > χl 
@@ -38,6 +41,19 @@ struct AtomicLine{T <: AbstractFloat}
         Blu = gu / gl * Bul
         new{T}(Aul, Bul, Blu, λ0, χl, χu, χ∞, atom_weight, Z)
     end
+end
+
+
+"""
+If input is in wavenumber, convert to energy. Otherwise keep as energy.
+"""
+function wavenumber_to_energy(a::Quantity{T}) where T <: AbstractFloat
+    if typeof(a) <: PerLength
+        a = convert(Unitful.Quantity{T, Unitful.𝐋^2 * Unitful.𝐓^-2 * Unitful.𝐌},
+                    (h * c_0 * a) |> u"aJ")
+    end
+    @assert typeof(a) <: Unitful.Energy{T} "Input units must either be wavenumber or energy"
+    return a
 end
 
 
