@@ -117,7 +117,7 @@ fit in
 function gaunt_ff(ν::Unitful.Frequency, temperature::Unitful.Temperature, charge::Int)
     lookup_y = log10(h_k * ν / temperature)
     lookup_x = log10(3.28805e15u"Hz" * charge^2 * h_k / temperature)
-    kurucz_ff_interp(lookup_y, lookup_x)::Float64
+    return kurucz_ff_interp(lookup_y, lookup_x)::Float64
 end
 
 """
@@ -129,7 +129,7 @@ fit in
 [Kurucz (1970, SAO Special Report no. 309), page 77](https://ui.adsabs.harvard.edu/abs/1970SAOSR.309.....K/abstract)
 """                                    
 function gaunt_ff(λ::Unitful.Length, temperature::Unitful.Temperature, charge::Int)
-    gaunt_ff(c_0 / λ, temperature, charge)
+    return gaunt_ff(c_0 / λ, temperature, charge)
 end
 
 
@@ -154,7 +154,7 @@ function gaunt_bf(λ::Unitful.Length, charge::Real, n_eff::Real)::Float64
 end
 
 function gaunt_bf(ν::Unitful.Frequency, charge::Real, n_eff::Real)::Float64
-    gaunt_bf(c_0 / ν, charge, n_eff)
+    return gaunt_bf(c_0 / ν, charge, n_eff)
 end
 
 
@@ -218,7 +218,7 @@ function hminus_ff_stilley(λ::Unitful.Length, temperature::Unitful.Temperature,
     λi = ustrip(λ |> u"nm")   # convert to units of table
     temp = ustrip(temperature |> u"K")
     kappa = stilley_ff_interp(λi, temp)::Float64 * 1e-29u"m^5/J" 
-    h_ground_pop * electron_pressure * kappa |> u"m^-1"
+    return h_ground_pop * electron_pressure * kappa |> u"m^-1"
 end
 
 
@@ -251,7 +251,7 @@ function hminus_bf_geltman(λ::Unitful.Length, temperature::Unitful.Temperature,
     λi = ustrip(λ |> u"nm")   # convert to units of table
     κ = geltman_bf_interp(λi)::Float64 * 1e-21u"m^2"
     stimulated_emission = exp(-hc_k / (λ * temperature))
-    h_minus_pop * (1 - stimulated_emission) * κ
+    return h_minus_pop * (1 - stimulated_emission) * κ
 end
 
 """
@@ -265,7 +265,7 @@ and electron density. Uses recipe from
 function hminus_bf_geltman(λ::Unitful.Length, temperature::Unitful.Temperature,
                            h_ground_pop::NumberDensity, electron_density::NumberDensity)
     h_minus_pop = calc_hminus_pop(h_ground_pop, temperature, electron_density)
-    hminus_bf_geltman(λ, temperature, h_minus_pop)
+    return hminus_bf_geltman(λ, temperature, h_minus_pop)
 end
 
 """
@@ -279,7 +279,7 @@ function calc_hminus_pop(h_ground_pop::NumberDensity, temperature::Unitful.Tempe
                          electron_density::NumberDensity)
     tmp = (ustrip(saha_const) / ustrip(temperature |> u"K"))^(3/2) * u"m^3"
     ϕ = tmp * exp(hminusχ / (k_B * temperature)) / 4
-    h_ground_pop * electron_density * ϕ
+    return h_ground_pop * electron_density * ϕ
 end
 
 
@@ -317,14 +317,14 @@ function hminus_ff_john(λ::Unitful.Length, temperature::Unitful.Temperature,
     sqrtθ = sqrt((5040.0u"K" / temperature) |> u"K/K")
     λinv = 1.0 / λμ
     κ = 0.0
-    for i=1:6
+    for i in 1:6
         κ += sqrtθ^(1 + i) * (λμ^2 * table[i, 1] + table[i, 2] + 
                                 λinv * (table[i, 3] + λinv * (table[i, 4] + 
                                 λinv * (table[i, 5] + λinv * table[i, 6]))))
     end
     # NOTE: in RH temperature from electron pressure is set to 5040 K!
     # Also, RH uses sometimes nHminus = nH * pe, other times atmos.nHmin...
-    κ * 1e-32u"m^5/J" * h_ground_pop * electron_density * k_B * temperature
+    return κ * 1e-32u"m^5/J" * h_ground_pop * electron_density * k_B * temperature
 end
 
 """
@@ -349,14 +349,14 @@ function hminus_bf_john(λ::Unitful.Length, temperature::Unitful.Temperature,
     if λμ < λ1 
         λidiff = 1.0 / λ1 - 1.0 / λ0
     end
-    for n=1:6
+    for n in 1:6
         fλ += table[n] * λidiff^((n-1)/2)
     end
     σλ *= fλ
     α = h_k * c_0
     κ = 0.750 * sqrt(temp)^-5 * exp(α / (λ0*u"μm" * temperature)) * 
        (1 - exp(-α / (λ * temperature))) * σλ * 1e-3u"m^5/J"
-    κ * h_ground_pop * electron_density * k_B * temperature
+    return κ * h_ground_pop * electron_density * k_B * temperature
 end
 
 
@@ -376,7 +376,7 @@ function hydrogenic_ff(ν::Unitful.Frequency, temperature::Unitful.Temperature,
                        electron_density::NumberDensity, ion_density::NumberDensity, charge::Int)
     ν = ν |> u"s^-1"
     stimulated_emission = exp(-h_k * ν / temperature)
-    (αff_const * charge^2 / sqrt(temperature) * ν^-3 * electron_density *
+    return (αff_const * charge^2 / sqrt(temperature) * ν^-3 * electron_density *
       ion_density * (1 - stimulated_emission) * gaunt_ff(ν, temperature, charge))
 end
 
@@ -449,7 +449,7 @@ function h2minus_ff(λ::Unitful.Length, temperature::Unitful.Temperature,
     λi = ustrip(λ |> u"nm")   # convert to units of table
     temp = ustrip(temperature |> u"K")
     κ = bell_ff_interp(λi, temp)::Float64 * 1e-29u"m^5/J" 
-    h2_density * electron_pressure * κ |> u"m^-1"
+    return h2_density * electron_pressure * κ |> u"m^-1"
 end
 
 
@@ -533,7 +533,7 @@ function h2plus_ff(λ::Unitful.Length, temperature::Unitful.Temperature,
     temp = convert(Float32, ustrip(temperature |> u"K"))
     κ = bates_ff_interp(λi, temp)::Float32 * u"m^5" 
     # Table in 1e-49 m^5, splitting in two to prevent overflow in Float32 inputs
-    κ * (h_ground_pop * 1f-25) * (proton_density * 1f-24) 
+    return κ * (h_ground_pop * 1f-25) * (proton_density * 1f-24) 
 end
 
 """
@@ -550,7 +550,7 @@ function h2plus_bf(λ::Unitful.Length, temperature::Unitful.Temperature,
     temp = convert(Float32, ustrip(temperature |> u"K"))
     κ = bates_bf_interp(λi, temp)::Float32 * u"m^5" 
     # Table in 1e-49 m^5, splitting in two to prevent overflow in Float32 inputs
-    κ * (h_ground_pop * 1f-25) * (proton_density * 1f-24)
+    return κ * (h_ground_pop * 1f-25) * (proton_density * 1f-24)
 end
 
 #=----------------------------------------------------------------------------
@@ -587,7 +587,7 @@ function rayleigh_h2(λ::Unitful.Length, h2_density::NumberDensity)
     else
         σ_h2 = 0.0u"m^2"
     end
-    σ_h2 * h2_density
+    return σ_h2 * h2_density
 end
 
 
@@ -610,5 +610,5 @@ function rayleigh_h(λ::Unitful.Length, h_ground_pop::NumberDensity)
     else
         σ_h = 0.0u"m^2" 
     end
-    σ_h * h_ground_pop
+    return σ_h * h_ground_pop
 end

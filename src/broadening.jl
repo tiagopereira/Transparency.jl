@@ -2,10 +2,6 @@
 Functions to calculate different line broadenings.
 """
 
-const E_∞ = R_∞ * c_0 * h
-const αp = 4.5 * 4*π * ε_0 * a_0^3   # Polarisability of hydrogen [F m^2]
-const inv_4πε0 = 1. / (4 * π * ε_0)
-
 # For now
 const mass_H = 1.008 * m_u
 const mass_He = 4.003 * m_u
@@ -23,7 +19,7 @@ element weight. The van der Waals broadening can be scaled for both H and He per
 using `H_scaling` and `He_scaling`.
 """
 function γ_unsold_const(line::AtomicLine; H_scaling::Real=1, He_scaling::Real=1)
-    Δr = (E_∞^2 * (1 / (line.χ∞ - line.χj)^2 - 1 / (line.χ∞ - line.χi)^2)) |> u"J/J"
+    Δr = (Ry^2 * (1 / (line.χ∞ - line.χj)^2 - 1 / (line.χ∞ - line.χi)^2)) |> u"J/J"
     C6 = ustrip((2.5 * e^2 * αp * inv_4πε0^2 * 2 * π * 
                  (line.Z * a_0)^2 / h * Δr) |> u"C^2 * m^6 / (F * J * s)")
     v_rel_const = ustrip(8 * k_B / (π * line.atom_weight) |> u"J/(K * kg)")

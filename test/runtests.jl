@@ -1,8 +1,9 @@
+using Interpolations
+using SpecialFunctions: erfcx
 using Test
 using Transparency
 using Unitful
 import PhysicalConstants.CODATA2018: h, k_B, R_∞, c_0, m_e, e, ε_0
-using SpecialFunctions: erfcx
 
 @testset "Thomson" begin
     @test thomson(1.e29u"m^-3") ≈ 6.652458732173518u"m^-1"
@@ -138,8 +139,56 @@ end
         dist = collect(LinRange(0, 100, 1001))u"m"
         ext = ones(1001)u"m^-1"
         S = ones(1001)u"kW / (m^2 * nm)"
-        @test isapprox(calc_intensity(dist, ext, S), 1u"kW / (m^2 * nm)",
+        @test isapprox(calc_intensity(dist, ext, S), 0.9055913235757069u"kW / (m^2 * nm)",
                        atol=1e-3u"kW / (m^2 * nm)")
         @test_throws AssertionError calc_intensity(-dist, ext, S)
+    end
+end
+
+@testset "Collisions" begin
+    @testset "Johnson" begin
+        ne = 1e20u"m^-3"
+        @test_throws AssertionError coll_exc_hydrogen_johnson(2, 1, ne, 1u"K")
+        @test_throws AssertionError coll_exc_hydrogen_johnson(-1, 1, ne, 1u"K")
+        @test_throws AssertionError coll_ion_hydrogen_johnson(-1, ne, 1u"K")
+        @test coll_exc_hydrogen_johnson(1, 2, ne, 1u"K") ≈ 0.0u"s^-1"
+        @test coll_ion_hydrogen_johnson(1, ne, 1u"K") ≈ 0.0u"s^-1"
+        @test all(Transparency._bn.([1, 2, 3]) ≈ [-0.603, 0.116875, 0.25876543209876557])
+        @test all(Transparency._rn.([1, 2, 3]) ≈ [0.45, 1.94 * 2^-1.57, 1.94 * 3^-1.57])
+        @test Transparency.ξ(1e20) ≈ 0.0
+        @test Transparency.ξ(0.1) ≈ 6.125071285714834
+        # Testing against implementation
+        temp = [3000, 5000, 10000]u"K"
+        @test all(coll_exc_hydrogen_johnson.(1, 2, ne, temp) ≈ 
+            [3.930707156378747e-11, 0.0002263838629287018, 24.38373538697928]u"s^-1")
+        @test all(coll_exc_hydrogen_johnson.(1, 4, ne, temp) ≈ 
+            [1.3966268525286798e-16, 4.2003964667891764e-8, 0.08902629232613525]u"s^-1")
+        @test all(coll_exc_hydrogen_johnson.(2, 3, ne, temp) ≈ 
+            [41449.22586174524, 712944.3194152612, 6.358527475844925e6]u"s^-1")
+        @test all(coll_ion_hydrogen_johnson.(1, ne, temp) ≈
+            [2.0663760818067978e-18, 3.980869050632006e-9, 0.04717372440180093]u"s^-1")
+        @test all(coll_ion_hydrogen_johnson.(2, ne, temp) ≈
+            [5.6897483527787776, 1746.3754923299948, 166085.00320954874]u"s^-1")
+        @test all(coll_ion_hydrogen_johnson.(3, ne, temp) ≈
+            [35134.766878609924, 592137.0862432675, 6.093655265672546e6]u"s^-1")
+        @test all(CE_RH_hydrogen.(1, [2, 3, 4], 5000u"K") ≈ [6.098416316523097e-16, 
+            1.151527001714162e-16, 4.20364505409004e-17]u"m^3 / (K^(1/2) * s)")
+        @test all(CI_RH_hydrogen.([1, 2, 3], 5000u"K") ≈ [2.86396932776755e-17,
+            6.595860989488697e-16, 2.791765778377678e-15]u"m^3 / (K^(1/2) * s)")
+    end
+    @testset "RH rates" begin
+        temp = [3000, 5000, 10000]u"K"
+        data1 = [1, 1, 1]u"m^3 / (K^(1/2) * s)"
+        data2 = [1, 1, 1]
+        interp1 = LinearInterpolation(temp, data1)
+        interp2 = LinearInterpolation(temp, data2)
+        # Using wrong units of data:
+        @test_throws MethodError coll_CE(interp2, 1, 1u"m^-3", 5000u"K")
+        @test_throws MethodError coll_CI(interp2, 1u"J", 1u"m^-3", 5000u"K")
+        @test_throws MethodError coll_Ω(interp1, 1, 1u"m^-3", 5000u"K")
+        @test_throws AssertionError coll_CI(interp1, -1u"J", 1u"m^-3", 5000u"K")
+        @test coll_CE(interp1, 1, 1u"m^-3", 10000u"K") ≈ 100.0u"s^-1"
+        @test coll_CI(interp1, 1e-50u"J", 1u"m^-3", 10000u"K") ≈ 100.0u"s^-1"
+        @test coll_Ω(interp2, 1, 1u"m^-3"/8.629132180819955e-14, 10000u"K") ≈ 1.0u"s^-1"
     end
 end
