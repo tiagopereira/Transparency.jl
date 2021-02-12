@@ -12,7 +12,11 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [compat]
 julia = "^1.4"
+Interpolations = "^0.12"
+NumericalIntegration = "^0.3"
+PhysicalConstants = "^0.2"
 SpecialFunctions = "^1.2.1"
+Unitful = "1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
