@@ -191,4 +191,22 @@ end
         @test coll_CI(interp1, 1e-50u"J", 1u"m^-3", 10000u"K") ≈ 100.0u"s^-1"
         @test coll_Ω(interp2, 1, 1u"m^-3"/8.629132180819955e-14, 10000u"K") ≈ 1.0u"s^-1"
     end
+    @testset "Przybilla & Butter" begin
+        temp = [5000, 10000, 30000, 250000]u"K"
+        ne = 1u"m^-3"
+        c0 = sqrt.(temp) ./ Transparency.Ω_c0
+        @test_throws AssertionError coll_deexc_hydrogen_PB04(1, 8, 1, ne, temp[1])
+        @test_throws AssertionError coll_deexc_hydrogen_PB04(3, 1, 1, ne, temp[1])
+        # Compare with a few random values from the original table
+        @test isapprox(ustrip.(coll_deexc_hydrogen_PB04.(1, 2, 1, ne, temp) .* c0),
+                       [0.698, 0.809, 1.15, 3.95], atol=1e-3)
+        @test isapprox(ustrip.(coll_deexc_hydrogen_PB04.(1, 4, 1, ne, temp) .* c0),
+                       [0.102, 0.122, 0.228, 0.488], atol=1e-3)
+        @test isapprox(ustrip.(coll_deexc_hydrogen_PB04.(2, 3, 1, ne, temp) .* c0),
+                       [27.8, 33.8, 62.0, 252], atol=1e-3)
+        @test isapprox(ustrip.(coll_deexc_hydrogen_PB04.(2, 7, 1, ne, temp) .* c0),
+                       [7.26, 9.27, 11.4, 11.9], atol=1e-3)
+        @test isapprox(ustrip.(coll_deexc_hydrogen_PB04.(4, 5, 1, ne, temp) .* c0),
+                       [817, 1350, 3400, 10000], atol=1e-3)
+    end
 end

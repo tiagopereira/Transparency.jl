@@ -271,3 +271,100 @@ function g2(n::Integer)
         return (0.3887f0 - (1.181f0 - 1.4700f0 / n) / n) / n^2
     end
 end
+
+
+#=----------------------------------------------------------------------------
+        Collisional rates for hydrogen from Przybilla & Butler (2004)
+----------------------------------------------------------------------------=#
+
+const PB04_temp = [0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 
+                    4, 5, 6, 8, 10, 15, 20, 25] * 10000u"K"
+const PB04_Ω = 
+    [[6.40f-1 6.98f-1 7.57f-1 8.09f-1 8.97f-1 9.78f-1 1.06f+0 1.15f+0   #= 1->2 
+=#    1.32f+0 1.51f+0 1.68f+0 2.02f+0 2.33f+0 2.97f+0 3.50f+0 3.95f+0];  
+     [2.20f-1 2.40f-1 2.50f-1 2.61f-1 2.88f-1 3.22f-1 3.59f-1 3.96f-1   #= 1->3 
+=#    4.64f-1 5.26f-1 5.79f-1 6.70f-1 7.43f-1 8.80f-1 9.79f-1 1.06f+0];  
+     [9.93f-2 1.02f-1 1.10f-1 1.22f-1 1.51f-1 1.80f-1 2.06f-1 2.28f-1   #= 1->4 
+=#    2.66f-1 2.95f-1 3.18f-1 3.55f-1 3.83f-1 4.30f-1 4.63f-1 4.88f-1];
+     [4.92f-2 5.84f-2 7.17f-2 8.58f-2 1.12f-1 1.33f-1 1.50f-1 1.64f-1   #= 1->5 
+=#    1.85f-1 2.01f-1 2.12f-1 2.29f-1 2.39f-1 2.59f-1 2.71f-1 2.81f-1];
+     [2.97f-2 4.66f-2 6.28f-2 7.68f-2 9.82f-2 1.14f-1 1.25f-1 1.33f-1   #= 1->6 
+=#    1.45f-1 1.53f-1 1.58f-1 1.65f-1 1.70f-1 1.77f-1 1.82f-1 1.85f-1];
+     [5.03f-2 6.72f-2 7.86f-2 8.74f-2 1.00f-1 1.10f-1 1.16f-1 1.21f-1   #= 1->7 
+=#    1.27f-1 1.31f-1 1.34f-1 1.36f-1 1.37f-1 1.39f-1 1.39f-1 1.40f-1];
+     [2.35f+1 2.78f+1 3.09f+1 3.38f+1 4.01f+1 4.71f+1 5.45f+1 6.20f+1   #= 2->3 
+=#    7.71f+1 9.14f+1 1.05f+2 1.29f+2 1.51f+2 1.93f+2 2.26f+2 2.52f+2];
+     [1.07f+1 1.15f+1 1.23f+1 1.34f+1 1.62f+1 1.90f+1 2.18f+1 2.44f+1   #= 2->4 
+=#    2.89f+1 3.27f+1 3.60f+1 4.14f+1 4.56f+1 5.31f+1 5.83f+1 6.23f+1];
+     [5.22f+0 5.90f+0 6.96f+0 8.15f+0 1.04f+1 1.23f+1 1.39f+1 1.52f+1   #= 2->5 
+=#    1.74f+1 1.90f+1 2.03f+1 2.23f+1 2.37f+1 2.61f+1 2.78f+1 2.89f+1];
+     [2.91f+0 4.53f+0 6.06f+0 7.32f+0 9.17f+0 1.05f+1 1.14f+1 1.21f+1   #= 2->6 
+=#    1.31f+1 1.38f+1 1.44f+1 1.51f+1 1.56f+1 1.63f+1 1.68f+1 1.71f+1];
+     [5.25f+0 7.26f+0 8.47f+0 9.27f+0 1.03f+1 1.08f+1 1.12f+1 1.14f+1   #= 2->7 
+=#    1.17f+1 1.18f+1 1.19f+1 1.19f+1 1.20f+1 1.19f+1 1.19f+1 1.19f+1];
+     [1.50f+2 1.90f+2 2.28f+2 2.70f+2 3.64f+2 4.66f+2 5.70f+2 6.72f+2   #= 3->4 
+=#    8.66f+2 1.04f+3 1.19f+3 1.46f+3 1.67f+3 2.08f+3 2.39f+3 2.62f+3];
+     [7.89f+1 9.01f+1 1.07f+2 1.26f+2 1.66f+2 2.03f+2 2.37f+2 2.68f+2   #= 3->5
+=#    3.19f+2 3.62f+2 3.98f+2 4.53f+2 4.95f+2 5.68f+2 6.16f+2 6.51f+2]; 
+     [4.13f+1 6.11f+1 8.21f+1 1.01f+2 1.31f+2 1.54f+2 1.72f+2 1.86f+2   #= 3->6 
+=#    2.08f+2 2.24f+2 2.36f+2 2.53f+2 2.65f+2 2.83f+2 2.94f+2 3.02f+2];
+     [7.60f+1 1.07f+2 1.25f+2 1.37f+2 1.52f+2 1.61f+2 1.68f+2 1.72f+2   #= 3->7 
+=#    1.78f+2 1.81f+2 1.83f+2 1.85f+2 1.86f+2 1.87f+2 1.86f+2 1.87f+2];
+     [5.90f+2 8.17f+2 1.07f+3 1.35f+3 1.93f+3 2.47f+3 2.96f+3 3.40f+3   #= 4->5 
+=#    4.14f+3 4.75f+3 5.25f+3 6.08f+3 6.76f+3 8.08f+3 9.13f+3 1.00f+4];
+     [2.94f+2 4.21f+2 5.78f+2 7.36f+2 1.02f+3 1.26f+3 1.46f+3 1.64f+3   #= 4->6 
+=#    1.92f+3 2.15f+3 2.33f+3 2.61f+3 2.81f+3 3.15f+3 3.36f+3 3.51f+3];
+     [4.79f+2 7.06f+2 8.56f+2 9.66f+2 1.11f+3 1.21f+3 1.29f+3 1.34f+3   #= 4->7
+=#    1.41f+3 1.46f+3 1.50f+3 1.55f+3 1.57f+3 1.61f+3 1.62f+3 1.63f+3]; 
+     [1.93f+3 2.91f+3 4.00f+3 5.04f+3 6.81f+3 8.20f+3 9.29f+3 1.02f+4   #= 5->6 
+=#    1.15f+4 1.26f+4 1.34f+4 1.49f+4 1.63f+4 1.97f+4 2.27f+4 2.54f+4];
+     [1.95f+3 3.24f+3 4.20f+3 4.95f+3 6.02f+3 6.76f+3 7.29f+3 7.70f+3   #= 5->7 
+=#    8.26f+3 8.63f+3 8.88f+3 9.21f+3 9.43f+3 9.78f+3 1.00f+4 1.02f+4];
+     [6.81f+1 1.17f+4 1.50f+4 1.73f+4 2.03f+4 2.21f+4 2.33f+4 2.41f+4   #= 6->7 
+=#    2.52f+4 2.60f+4 2.69f+4 2.90f+4 3.17f+4 3.94f+4 4.73f+4 5.50f+4]]
+# Index of transition data in matrix form: PB04_index[n_l, n_u] = i,
+# where i is row index in PB04_Ω
+const PB04_index = [0  1  2  3  4  5  6
+                    0  0  7  8  9 10 11
+                    0  0  0 12 13 14 15
+                    0  0  0  0 16 17 18
+                    0  0  0  0  0 19 20
+                    0  0  0  0  0  0 21]
+const PB04_interp = [LinearInterpolation(PB04_temp, PB04_Ω[i, :],
+                                         extrapolation_bc=Line()) for i in 1:16]
+
+"""
+    coll_deexc_hydrogen_PB04(
+        n_l::Integer,
+        n_u::Integer,
+        g_u::Integer,
+        electron_density::NumberDensity,
+        temperature::Unitful.Temperature,
+    )
+
+Calculate collisional de-excitation by electrons of a bound-bound hydrogen transition, 
+using the Ω data from Table 3 of
+[Przybilla & Butler (2004)](https://ui.adsabs.harvard.edu/abs/2004ApJ...610L..61P/abstract).
+Data available only up to n=7.
+
+# Arguments
+- `n_l`: lower level (principal quantum number) of transition
+- `n_u`: upper level (principal quantum number) of transition
+- `g_u`: statistical weight of upper level
+- `electron_density`: electron density
+- `temperature`: gas temperature
+
+# Returns
+- `coll_deexc`: collisional de-excitations per second (from upper level to lower level)
+"""
+function coll_deexc_hydrogen_PB04(
+    n_l::Integer,
+    n_u::Integer,
+    g_u::Integer,
+    electron_density::NumberDensity,
+    temperature::Unitful.Temperature,
+)
+    @assert 7 > n_l > 0 "Must have 7 > n_l > 0"
+    @assert 8 > n_u > n_l "Must have 8 > n_u > n_l"
+    return coll_Ω(PB04_interp[PB04_index[n_l, n_u]], g_u, electron_density, temperature)
+end
