@@ -24,6 +24,11 @@ end
         @test all(Transparency.hminus_ff_john.(
             λ, temp, 1u"m^-3", 1u"Pa" ./ (k_B .* temp)) ≈ [2.7053123415611454e-28,
                 8.7520478601176e-30, 1.6977098265784962e-30]u"m^-1")
+        @test hminus_ff.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="stilley") ≈
+            Transparency.hminus_ff_stilley.(λ, temp, 1u"m^-3", 1u"m^-3")
+        @test hminus_ff.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="john") ≈
+            Transparency.hminus_ff_john.(λ, temp, 1u"m^-3", 1u"m^-3")
+        @test_throws "ErrorException" hminus_ff.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="aaa")
     end
     @testset "hminus_bf" begin
         # Values from the table, ensuring no stimulated emission
@@ -32,8 +37,18 @@ end
             3.92e-21, 1.7e-22]u"m^-1")
         @test Transparency.hminus_bf_geltman(0u"nm", 0u"K", 1u"m^-3") == 0u"m^-1"
         # Only testing against implementation (no table, only coefficients)
+        @test all(Transparency.hminus_bf_geltman.(λ, 5000u"K", 1e24u"m^-3", 1e25u"m^-3") ≈ [
+            2.5276368595110785, 64.24516492134173, 2.3904062765360763]u"m^-1")
         @test all(Transparency.hminus_bf_john.(λ, 5000u"K", 1e24u"m^-3", 1e25u"m^-3") ≈ [
             2.5257481813577, 65.22804371400161, 1.8270928643449478]u"m^-1")
+        temp = [2000, 5000, 10000]u"K"
+        @test Transparency.calc_hminus_pop.(1e13u"m^-3", temp, 1e14u"m^-3") ≈ 
+            [91.94566524525405, 1.6850912396740527, 0.24835857088939245]u"m^-3"
+        @test hminus_bf.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="geltman") ≈
+            Transparency.hminus_bf_geltman.(λ, temp, 1u"m^-3", 1u"m^-3")
+        @test hminus_bf.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="john") ≈
+            Transparency.hminus_bf_john.(λ, temp, 1u"m^-3", 1u"m^-3")
+        @test_throws "ErrorException" hminus_bf.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="aaa")
     end
     @testset "hydrogenic" begin
         t1 = (3.28805e15u"Hz" * h / k_B) |> u"K"
@@ -104,6 +119,7 @@ end
         @test voigt_profile.(0.1, v, wave) == voigt_profile.(0.1, -v, wave)
         @test dispersion_profile.(0.1, v, wave) == -dispersion_profile.(0.1, -v, wave)
     end
+    @test doppler_width(ustrip(c_0) * u"m", 1u"kg",  ustrip(0.5 / k_B) * u"K") ≈ 1u"m"
 end
 
 @testset "Broadening" begin
@@ -143,6 +159,7 @@ end
                        atol=1e-3u"kW / (m^2 * nm)")
         @test_throws AssertionError calc_intensity(-dist, ext, S)
     end
+    @test Transparency.wavenumber_to_energy(ustrip(1 / (h * c_0)) * u"m^-1") ≈ 1u"J"
 end
 
 @testset "Collisions" begin
