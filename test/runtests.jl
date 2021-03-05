@@ -10,13 +10,13 @@ import PhysicalConstants.CODATA2018: h, k_B, R_∞, c_0, m_e, e, ε_0
     @test thomson(0u"m^-3") == 0.0u"m^-1"
     @test_throws MethodError thomson(1)
     @test_throws MethodError thomson(1u"m")
-end 
+end
 
 @testset "Hydrogen" begin
     @testset "hminus_ff" begin
         θ = [0.5, 1, 2]
         temp = 5040u"K" ./ θ
-        λ = [91130, 11390, 3038]u"Å"  
+        λ = [91130, 11390, 3038]u"Å"
         # Testing against values in the original table
         @test all(Transparency.hminus_ff_stilley.(
             λ, temp, 1u"m^-3", 1u"Pa" ./ (k_B .* temp)) ≈ [2.75e-28, 8.76e-30, 1.45e-30]u"m^-1")
@@ -42,7 +42,7 @@ end
         @test all(Transparency.hminus_bf_john.(λ, 5000u"K", 1e24u"m^-3", 1e25u"m^-3") ≈ [
             2.5257481813577, 65.22804371400161, 1.8270928643449478]u"m^-1")
         temp = [2000, 5000, 10000]u"K"
-        @test Transparency.calc_hminus_pop.(1e13u"m^-3", temp, 1e14u"m^-3") ≈ 
+        @test Transparency.calc_hminus_pop.(1e13u"m^-3", temp, 1e14u"m^-3") ≈
             [91.94566524525405, 1.6850912396740527, 0.24835857088939245]u"m^-3"
         @test hminus_bf.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="geltman") ≈
             Transparency.hminus_bf_geltman.(λ, temp, 1u"m^-3", 1u"m^-3")
@@ -70,7 +70,7 @@ end
         @test all(hydrogenic_bf.(ν, ν / 1.1, 5000u"K", 1e22u"m^-3", 1., 2.) ≈ [
             2.4903105889694794, 9.569685175346825, 9.154320813938323]u"m^-1")
         @test hydrogenic_bf(ν[1], ν[1] * 1.1, 1u"K", 1u"m^-3", 1, 2.) == 0u"m^-1"
-    end     
+    end
     @testset "h2minus" begin
         # Test a few points from the table
         λ = [350.5, 1139.1, 15_188.3]u"nm"
@@ -86,7 +86,7 @@ end
                   h2plus_bf.(λ, temp, 1f25u"m^-3", 1f24u"m^-3")
         @test all(κ_total ≈ [0.226, 1.35, 114.]u"m^-1")
         # Test bf fraction table
-        @test all(h2plus_bf.(λ, temp, 1f25u"m^-3", 1f24u"m^-3") ./ 
+        @test all(h2plus_bf.(λ, temp, 1f25u"m^-3", 1f24u"m^-3") ./
                         κ_total ≈ [0.006, 0.273, 0.996])
     end
     @testset "rayleigh" begin
@@ -124,14 +124,38 @@ end
 
 @testset "Broadening" begin
     line = AtomicLine(1.1u"aJ", 1.0u"aJ", 1.5u"aJ", 18, 8, 1.0, 1.0u"kg", 1)
-    # Testing against implementation
-    @test isapprox(γ_unsold_const(line), 1.1131993895644783e-15, rtol=1e-15)
-    @test all(γ_unsold.(1.0, 1u"K", [1, 2]u"m^-3") ≈ [1, 2]u"s^-1")
-    @test γ_unsold(1.0, 1000u"K", 1u"m^-3") ≈ (1000^0.3)u"s^-1"
-    @test calc_Aji(1u"m", ustrip(ε_0 * m_e * c_0), 1 / ustrip(2π * e^2)) ≈ 1u"s^-1"
-    @test calc_Bji(1u"m", 0u"Hz") ≈ 0u"m^3 / J"
-    @test calc_Bji(1000u"nm", 1e9u"Hz") ≈ 8.396002689872053e-6u"m^3 / J"
-    @test damping(1u"Hz", 1u"m", 1u"m") ≈ ustrip(1 / (4π * c_0))
+    @testset "van der Walls" begin
+        # Testing against implementation
+        @test const_unsold(line) ≈ 1.1131993895644783e-15 rtol=1e-15
+        @test γ_unsold.(1.0, 1u"K", [1, 2]u"m^-3") ≈ [1, 2]u"s^-1"
+        @test γ_unsold(1.0, 1000u"K", 1u"m^-3") ≈ (1000^0.3)u"s^-1"
+    end
+    @testset "Linear Stark" begin
+        # Test against Sutton formula
+        @test γ_linear_stark.([0., 1.]u"m^-3", 3, 1) ≈ [0, 0.00048]u"s^-1"
+        tmp = 0.0001926u"s^-1"
+        @test γ_linear_stark.([1, 1e20]u"m^-3", 3, 2) ≈ [tmp, tmp * (1e20)^(2/3)]
+        @test_throws AssertionError γ_linear_stark(1.0u"m^-3", 1, 1)
+        @test_throws AssertionError γ_linear_stark(1.0u"m^-3", 1, 0)
+    end
+    @testset "Quadratic Stark" begin
+        # Testing against implementation
+        @test Transparency.c4_traving(line) ≈ 3.744741607310466e-23u"m^4 / s"
+        @test const_quadratic_stark(line) ≈ 2.7236711602117037e-13u"m^3 / s"
+        @test const_quadratic_stark(line; scaling=2) ≈ const_quadratic_stark(line) * 2^(2/3)
+        @test γ_quadratic_stark(1.2345u"m^-3", 0u"K") ≈ 1.2345u"s^-1"
+        @test γ_quadratic_stark(1e10u"m^-3", 10000u"K") ≈ 1e10u"s^-1" * 10000^(1/6)
+        # Testing against implementation
+        temp = [5000, 10000]u"K"
+        @test (γ_quadratic_stark_gray.(1e22u"m^-3", temp, 1e-20u"m^4/s") ≈
+                [5.709239783376956e11, 6.40840498153864e11]u"s^-1")
+    end
+    @testset "Radiation quantities" begin
+        @test calc_Aji(1u"m", ustrip(ε_0 * m_e * c_0), 1 / ustrip(2π * e^2)) ≈ 1u"s^-1"
+        @test calc_Bji(1u"m", 0u"Hz") ≈ 0u"m^3 / J"
+        @test calc_Bji(1000u"nm", 1e9u"Hz") ≈ 8.396002689872053e-6u"m^3 / J"
+        @test damping(1u"Hz", 1u"m", 1u"m") ≈ ustrip(1 / (4π * c_0))
+    end
 end
 
 @testset "Line" begin
@@ -176,11 +200,11 @@ end
         @test Transparency.ξ(0.1) ≈ 6.125071285714834
         # Testing against implementation
         temp = [3000, 5000, 10000]u"K"
-        @test all(coll_exc_hydrogen_johnson.(1, 2, ne, temp) ≈ 
+        @test all(coll_exc_hydrogen_johnson.(1, 2, ne, temp) ≈
             [3.930707156378747e-11, 0.0002263838629287018, 24.38373538697928]u"s^-1")
-        @test all(coll_exc_hydrogen_johnson.(1, 4, ne, temp) ≈ 
+        @test all(coll_exc_hydrogen_johnson.(1, 4, ne, temp) ≈
             [1.3966268525286798e-16, 4.2003964667891764e-8, 0.08902629232613525]u"s^-1")
-        @test all(coll_exc_hydrogen_johnson.(2, 3, ne, temp) ≈ 
+        @test all(coll_exc_hydrogen_johnson.(2, 3, ne, temp) ≈
             [41449.22586174524, 712944.3194152612, 6.358527475844925e6]u"s^-1")
         @test all(coll_ion_hydrogen_johnson.(1, ne, temp) ≈
             [2.0663760818067978e-18, 3.980869050632006e-9, 0.04717372440180093]u"s^-1")
@@ -188,7 +212,7 @@ end
             [5.6897483527787776, 1746.3754923299948, 166085.00320954874]u"s^-1")
         @test all(coll_ion_hydrogen_johnson.(3, ne, temp) ≈
             [35134.766878609924, 592137.0862432675, 6.093655265672546e6]u"s^-1")
-        @test all(CE_RH_hydrogen.(1, [2, 3, 4], 5000u"K") ≈ [6.098416316523097e-16, 
+        @test all(CE_RH_hydrogen.(1, [2, 3, 4], 5000u"K") ≈ [6.098416316523097e-16,
             1.151527001714162e-16, 4.20364505409004e-17]u"m^3 / (K^(1/2) * s)")
         @test all(CI_RH_hydrogen.([1, 2, 3], 5000u"K") ≈ [2.86396932776755e-17,
             6.595860989488697e-16, 2.791765778377678e-15]u"m^3 / (K^(1/2) * s)")

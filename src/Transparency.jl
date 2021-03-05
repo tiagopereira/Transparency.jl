@@ -6,7 +6,9 @@ module Transparency
     export h2minus_ff, h2plus_ff, h2plus_bf
     export rayleigh_h2, rayleigh_h, thomson
     export humlicek, voigt_profile, dispersion_profile
-    export calc_Aji, calc_Bji, damping, doppler_width, γ_unsold_const, γ_unsold
+    export calc_Aji, calc_Bji, damping, doppler_width
+    export const_unsold, γ_unsold, γ_linear_stark
+    export const_quadratic_stark, γ_quadratic_stark, γ_quadratic_stark_gray
     export AtomicLine, αline_λ, jline_λ, blackbody_λ, blackbody_ν, calc_intensity
     export coll_CE, coll_CI, coll_Ω
     export coll_deexc_hydrogen_PB04, coll_exc_hydrogen_johnson, coll_ion_hydrogen_johnson

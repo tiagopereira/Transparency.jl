@@ -1,6 +1,6 @@
 """
 Computes the extinction coefficient \$\\alpha_\\nu\$ for hydrogen-related
-bound-free and free-free transitions. 
+bound-free and free-free transitions.
 
 Includes:
 * Neutral Hydrogen bound-free and free-free.
@@ -20,11 +20,11 @@ Includes:
 
 Compute free-free extinction from H minus ion. Recipe can be one of:
 
-- `stilley` (default): Interpolates table from 
+- `stilley` (default): Interpolates table from
   [Stilley & Callaway (1970)](https://ui.adsabs.harvard.edu/abs/1970ApJ...160..245S/abstract),
-  which is valid for λ up to 9113 nm. 
+  which is valid for λ up to 9113 nm.
 
-- `john`: Follows 
+- `john`: Follows
   [John (1988)](https://ui.adsabs.harvard.edu/abs/1988A%26A...193..189J/abstract),
   which is valid beyond 9113 nm but may not be good below 364.5 nm.
 """
@@ -50,7 +50,7 @@ Compute bound-free extinction from H minus ion. Recipe can be one of:
 - `geltman` (default): Uses recipe from
   [Geltman (1962)](https://ui.adsabs.harvard.edu/abs/1962ApJ...136..935G/abstract)
 
-- `john`: Follows 
+- `john`: Follows
   [John (1988)](https://ui.adsabs.harvard.edu/abs/1988A%26A...193..189J/abstract),
   which is valid beyond 9113 nm but may not be good below 364.5 nm.
 """
@@ -74,23 +74,23 @@ end
  which is a fit to  figures 3-5 of Karzas and Latter (1961, ApJ Suppl 6, 167)
 
 - Note from Mats Carlsson in RH:
-    There is extrapolation outside the range of lg(gamma2) (T outside [1570,1.57e8K]) 
+    There is extrapolation outside the range of lg(gamma2) (T outside [1570,1.57e8K])
     or outside range of lg(U) (for lambda=3.2mm for T>49 kK). This should be OK for
     reasonable extrapolation distances (and better than setting to constant end value
     or zero). Interpolation tested against table in Gustafsson (1973) with results
     within 1%.
 =#
 const kurucz_ff_table = [5.53  5.49  5.46  5.43  5.40  5.25  5.00  4.69  4.48  4.16  3.85
-                         4.91  4.87  4.84  4.80  4.77  4.63  4.40  4.13  3.87  3.52  3.27  
-                         4.29  4.25  4.22  4.18  4.15  4.02  3.80  3.57  3.27  2.98  2.70  
-                         3.64  3.61  3.59  3.56  3.54  3.41  3.22  2.97  2.70  2.45  2.20  
-                         3.00  2.98  2.97  2.95  2.94  2.81  2.65  2.44  2.21  2.01  1.81  
-                         2.41  2.41  2.41  2.41  2.41  2.32  2.19  2.02  1.84  1.67  1.50  
-                         1.87  1.89  1.91  1.93  1.95  1.90  1.80  1.68  1.52  1.41  1.30  
-                         1.33  1.39  1.44  1.49  1.55  1.56  1.51  1.42  1.33  1.25  1.17  
-                         0.90  0.95  1.00  1.08  1.17  1.30  1.32  1.30  1.20  1.15  1.11  
-                         0.55  0.58  0.62  0.70  0.85  1.01  1.15  1.18  1.15  1.11  1.08  
-                         0.33  0.36  0.39  0.46  0.59  0.76  0.97  1.09  1.13  1.10  1.08  
+                         4.91  4.87  4.84  4.80  4.77  4.63  4.40  4.13  3.87  3.52  3.27
+                         4.29  4.25  4.22  4.18  4.15  4.02  3.80  3.57  3.27  2.98  2.70
+                         3.64  3.61  3.59  3.56  3.54  3.41  3.22  2.97  2.70  2.45  2.20
+                         3.00  2.98  2.97  2.95  2.94  2.81  2.65  2.44  2.21  2.01  1.81
+                         2.41  2.41  2.41  2.41  2.41  2.32  2.19  2.02  1.84  1.67  1.50
+                         1.87  1.89  1.91  1.93  1.95  1.90  1.80  1.68  1.52  1.41  1.30
+                         1.33  1.39  1.44  1.49  1.55  1.56  1.51  1.42  1.33  1.25  1.17
+                         0.90  0.95  1.00  1.08  1.17  1.30  1.32  1.30  1.20  1.15  1.11
+                         0.55  0.58  0.62  0.70  0.85  1.01  1.15  1.18  1.15  1.11  1.08
+                         0.33  0.36  0.39  0.46  0.59  0.76  0.97  1.09  1.13  1.10  1.08
                          0.19  0.21  0.24  0.28  0.38  0.53  0.76  0.96  1.08  1.09  1.09]
 # table_y is log10(hν / kT)
 const kurucz_ff_table_y = -4:0.5:1.5
@@ -100,7 +100,7 @@ const h_k = h / k_B
 const hc_k = h * c_0 / k_B
 const hminusχ = 0.754u"eV"
 const saha_const = h^2 / (2 * π * m_e * k_B)  # Constant for Saha equation
-const αff_const = (4 / (3 * h * c_0) * (e^2 / (4 * π * ε_0))^3 * 
+const αff_const = (4 / (3 * h * c_0) * (e^2 / (4 * π * ε_0))^3 *
                    sqrt(2 * π / (3 * m_e^3 * k_B))) |> u"K^(1/2) * m^5 / s^3"
 const αbf_const = (4 * e^2 / (3 * π * sqrt(3) * ε_0 * m_e * c_0^2 * R_∞)) |> u"m^2"
 const kurucz_ff_interp = LinearInterpolation((kurucz_ff_table_y, kurucz_ff_table_x),
@@ -111,9 +111,9 @@ const kurucz_ff_interp = LinearInterpolation((kurucz_ff_table_y, kurucz_ff_table
 
 Compute Gaunt factor for free-free based on [Karzas and Latter (1961, ApJ Suppl 6, 167)]
 (https://ui.adsabs.harvard.edu/abs/1961ApJS....6..167K/abstract)
-fit in 
+fit in
 [Kurucz (1970, SAO Special Report no. 309), page 77](https://ui.adsabs.harvard.edu/abs/1970SAOSR.309.....K/abstract)
-"""                                    
+"""
 function gaunt_ff(ν::Unitful.Frequency, temperature::Unitful.Temperature, charge::Int)
     lookup_y = log10(h_k * ν / temperature)
     lookup_x = log10(3.28805e15u"Hz" * charge^2 * h_k / temperature)
@@ -125,9 +125,9 @@ end
 
 Compute Gaunt factor for free-free based on [Karzas and Latter (1961, ApJ Suppl 6, 167)]
 (https://ui.adsabs.harvard.edu/abs/1961ApJS....6..167K/abstract)
-fit in 
+fit in
 [Kurucz (1970, SAO Special Report no. 309), page 77](https://ui.adsabs.harvard.edu/abs/1970SAOSR.309.....K/abstract)
-"""                                    
+"""
 function gaunt_ff(λ::Unitful.Length, temperature::Unitful.Temperature, charge::Int)
     return gaunt_ff(c_0 / λ, temperature, charge)
 end
@@ -140,9 +140,9 @@ end
     gaunt_bf(charge::Int, n_eff::Number, λ::Unitful.Length)::Float64
 
 Compute bound-free Gaunt factor for a given charge, effective principal
-quantum number and wavelength λ. Taken from RH. Formula from 
+quantum number and wavelength λ. Taken from RH. Formula from
 [Seaton (1960), Rep. Prog. Phys. 23, 313](https://ui.adsabs.harvard.edu/abs/1960RPPh...23..313S/abstract),
-page 316. 
+page 316.
 """
 function gaunt_bf(λ::Unitful.Length, charge::Real, n_eff::Real)::Float64
     x = ustrip(1 / (λ * R_∞ * charge^2) |> u"m/m")
@@ -158,47 +158,57 @@ function gaunt_bf(ν::Unitful.Frequency, charge::Real, n_eff::Real)::Float64
 end
 
 
+"""
+    n_eff(energy_upper::Unitful.Energy, energy_lower::Unitful.Energy, Z::Integer)
+
+Calculate the effective principal quantum number for a given energy difference
+and atomic number `Z`.
+"""
+function n_eff(energy_upper::Unitful.Energy, energy_lower::Unitful.Energy, Z::Integer)
+    return Z * sqrt(Ryh / (energy_upper - energy_lower))
+end
+
 #=----------------------------------------------------------------------------
                             Recipes from Stilley
 ----------------------------------------------------------------------------=#
-const stilley_ff_λ = [0.0, 303.8, 455.6, 506.3, 569.5, 650.9, 759.4, 911.3, 
+const stilley_ff_λ = [0.0, 303.8, 455.6, 506.3, 569.5, 650.9, 759.4, 911.3,
                       1013.0, 1139.0, 1302.0, 1519.0, 1823.0, 2278.0, 3038.0,
                       4556.0, 9113.0]  # in nm
 const stilley_ff_t = 5040.0 ./ [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2,
                                 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]  # in K
-const stilley_ff_table = 
+const stilley_ff_table =
    [[0.00e+00 0.00e+00 0.00e+00 0.00e+00 0.00e+00 0.00e+00 0.00e+00 0.00e+00  #=    0.0 nm
 =#   0.00e+00 0.00e+00 0.00e+00 0.00e+00 0.00e+00 0.00e+00 0.00e+00 0.00e+00];
     [3.44e-02 4.18e-02 4.91e-02 5.65e-02 6.39e-02 7.13e-02 7.87e-02 8.62e-02  #=  303.8 nm
-=#   9.36e-02 1.01e-01 1.08e-01 1.16e-01 1.23e-01 1.30e-01 1.38e-01 1.45e-01];  
+=#   9.36e-02 1.01e-01 1.08e-01 1.16e-01 1.23e-01 1.30e-01 1.38e-01 1.45e-01];
     [7.80e-02 9.41e-02 1.10e-01 1.25e-01 1.40e-01 1.56e-01 1.71e-01 1.86e-01  #=  455.6 nm
-=#   2.01e-01 2.16e-01 2.31e-01 2.45e-01 2.60e-01 2.75e-01 2.89e-01 3.03e-01];  
+=#   2.01e-01 2.16e-01 2.31e-01 2.45e-01 2.60e-01 2.75e-01 2.89e-01 3.03e-01];
     [9.59e-02 1.16e-01 1.35e-01 1.53e-01 1.72e-01 1.90e-01 2.08e-01 2.25e-01  #=  506.3 nm
-=#   2.43e-01 2.61e-01 2.78e-01 2.96e-01 3.13e-01 3.30e-01 3.47e-01 3.64e-01]; 
+=#   2.43e-01 2.61e-01 2.78e-01 2.96e-01 3.13e-01 3.30e-01 3.47e-01 3.64e-01];
     [1.21e-01 1.45e-01 1.69e-01 1.92e-01 2.14e-01 2.36e-01 2.58e-01 2.80e-01  #=  569.5 nm
-=#   3.01e-01 3.22e-01 3.43e-01 3.64e-01 3.85e-01 4.06e-01 4.26e-01 4.46e-01];  
+=#   3.01e-01 3.22e-01 3.43e-01 3.64e-01 3.85e-01 4.06e-01 4.26e-01 4.46e-01];
     [1.56e-01 1.88e-01 2.18e-01 2.47e-01 2.76e-01 3.03e-01 3.31e-01 3.57e-01  #=  650.9 nm
-=#   3.84e-01 4.10e-01 4.36e-01 4.62e-01 4.87e-01 5.12e-01 5.37e-01 5.62e-01];  
+=#   3.84e-01 4.10e-01 4.36e-01 4.62e-01 4.87e-01 5.12e-01 5.37e-01 5.62e-01];
     [2.10e-01 2.53e-01 2.93e-01 3.32e-01 3.69e-01 4.06e-01 4.41e-01 4.75e-01  #=  759.4 nm
-=#   5.09e-01 5.43e-01 5.76e-01 6.08e-01 6.40e-01 6.72e-01 7.03e-01 7.34e-01];  
+=#   5.09e-01 5.43e-01 5.76e-01 6.08e-01 6.40e-01 6.72e-01 7.03e-01 7.34e-01];
     [2.98e-01 3.59e-01 4.16e-01 4.70e-01 5.22e-01 5.73e-01 6.21e-01 6.68e-01  #=  911.3 nm
-=#   7.15e-01 7.60e-01 8.04e-01 8.47e-01 8.90e-01 9.32e-01 9.73e-01 1.01e+00];  
+=#   7.15e-01 7.60e-01 8.04e-01 8.47e-01 8.90e-01 9.32e-01 9.73e-01 1.01e+00];
     [3.65e-01 4.39e-01 5.09e-01 5.75e-01 6.39e-01 7.00e-01 7.58e-01 8.15e-01  #= 1013.0 nm
-=#   8.71e-01 9.25e-01 9.77e-01 1.03e+00 1.08e+00 1.13e+00 1.18e+00 1.23e+00];  
+=#   8.71e-01 9.25e-01 9.77e-01 1.03e+00 1.08e+00 1.13e+00 1.18e+00 1.23e+00];
     [4.58e-01 5.50e-01 6.37e-01 7.21e-01 8.00e-01 8.76e-01 9.49e-01 1.02e+00  #= 1139.0 nm
-=#   1.09e+00 1.15e+00 1.22e+00 1.28e+00 1.34e+00 1.40e+00 1.46e+00 1.52e+00];  
+=#   1.09e+00 1.15e+00 1.22e+00 1.28e+00 1.34e+00 1.40e+00 1.46e+00 1.52e+00];
     [5.92e-01 7.11e-01 8.24e-01 9.31e-01 1.03e+00 1.13e+00 1.23e+00 1.32e+00  #= 1302.0 nm
-=#   1.40e+00 1.49e+00 1.57e+00 1.65e+00 1.73e+00 1.80e+00 1.88e+00 1.95e+00];  
+=#   1.40e+00 1.49e+00 1.57e+00 1.65e+00 1.73e+00 1.80e+00 1.88e+00 1.95e+00];
     [7.98e-01 9.58e-01 1.11e+00 1.25e+00 1.39e+00 1.52e+00 1.65e+00 1.77e+00  #= 1519.0 nm
-=#   1.89e+00 2.00e+00 2.11e+00 2.21e+00 2.32e+00 2.42e+00 2.51e+00 2.61e+00];  
+=#   1.89e+00 2.00e+00 2.11e+00 2.21e+00 2.32e+00 2.42e+00 2.51e+00 2.61e+00];
     [1.14e+00 1.36e+00 1.58e+00 1.78e+00 1.98e+00 2.17e+00 2.34e+00 2.52e+00  #= 1823.0 nm
-=#   2.68e+00 2.84e+00 3.00e+00 3.15e+00 3.29e+00 3.43e+00 3.57e+00 3.70e+00];  
+=#   2.68e+00 2.84e+00 3.00e+00 3.15e+00 3.29e+00 3.43e+00 3.57e+00 3.70e+00];
     [1.77e+00 2.11e+00 2.44e+00 2.75e+00 3.05e+00 3.34e+00 3.62e+00 3.89e+00  #= 2278.0 nm
-=#   4.14e+00 4.39e+00 4.63e+00 4.86e+00 5.08e+00 5.30e+00 5.51e+00 5.71e+00];  
+=#   4.14e+00 4.39e+00 4.63e+00 4.86e+00 5.08e+00 5.30e+00 5.51e+00 5.71e+00];
     [3.10e+00 3.71e+00 4.29e+00 4.84e+00 5.37e+00 5.87e+00 6.36e+00 6.83e+00  #= 3038.0 nm
-=#   7.28e+00 7.72e+00 8.14e+00 8.55e+00 8.95e+00 9.33e+00 9.71e+00 1.01e+01];  
+=#   7.28e+00 7.72e+00 8.14e+00 8.55e+00 8.95e+00 9.33e+00 9.71e+00 1.01e+01];
     [6.92e+00 8.27e+00 9.56e+00 1.08e+01 1.19e+01 1.31e+01 1.42e+01 1.52e+01  #= 4556.0 nm
-=#   1.62e+01 1.72e+01 1.82e+01 1.91e+01 2.00e+01 2.09e+01 2.17e+01 2.25e+01];  
+=#   1.62e+01 1.72e+01 1.82e+01 1.91e+01 2.00e+01 2.09e+01 2.17e+01 2.25e+01];
     [2.75e+01 3.29e+01 3.80e+01 4.28e+01 4.75e+01 5.19e+01 5.62e+01 6.04e+01  #= 9133.0 nm
 =#   6.45e+01 6.84e+01 7.23e+01 7.60e+01 7.97e+01 8.32e+01 8.67e+01 9.01e+01]]
 const stilley_ff_interp = LinearInterpolation((stilley_ff_λ, stilley_ff_t[end:-1:1]),
@@ -217,7 +227,7 @@ function hminus_ff_stilley(λ::Unitful.Length, temperature::Unitful.Temperature,
     electron_pressure = electron_density * k_B * temperature
     λi = ustrip(λ |> u"nm")   # convert to units of table
     temp = ustrip(temperature |> u"K")
-    kappa = stilley_ff_interp(λi, temp)::Float64 * 1e-29u"m^5/J" 
+    kappa = stilley_ff_interp(λi, temp)::Float64 * 1e-29u"m^5/J"
     return h_ground_pop * electron_pressure * kappa |> u"m^-1"
 end
 
@@ -230,7 +240,7 @@ const geltman_bf_λ = [   0.0,   50.0,  100.0,  150.0,  200.0,  250.0,  300.0,
                        700.0,  750.0,  800.0,  850.0,  900.0,  950.0, 1000.0,
                       1050.0, 1100.0, 1150.0, 1200.0, 1250.0, 1300.0, 1350.0,
                       1400.0, 1450.0, 1500.0, 1550.0, 1600.0, 1641.9]  # in nm
-const geltman_bf_σ = [0.00, 0.15, 0.33, 0.57, 0.85, 1.17, 1.52, 1.89, 2.23, 
+const geltman_bf_σ = [0.00, 0.15, 0.33, 0.57, 0.85, 1.17, 1.52, 1.89, 2.23,
                       2.55, 2.84, 3.11, 3.35, 3.56, 3.71, 3.83, 3.92, 3.95,
                       3.93, 3.85, 3.73, 3.58, 3.38, 3.14, 2.85, 2.54, 2.20,
                       1.83, 1.46, 1.06, 0.71, 0.40, 0.17, 0.0]  # in 1e-21 m^2
@@ -258,7 +268,7 @@ end
     hminus_bf_geltman(λ::Unitful.Length, temperature::Unitful.Temperature,
                       h_ground_pop::NumberDensity, electron_density::NumberDensity)
 
-Compute extinction from H minus ion, from input hydrogen ground populations 
+Compute extinction from H minus ion, from input hydrogen ground populations
 and electron density. Uses recipe from
 [Geltman (1962)](https://ui.adsabs.harvard.edu/abs/1962ApJ...136..935G/abstract)
 """
@@ -297,8 +307,8 @@ which is valid beyond 9113 nm but may not be good below 364.5 nm.
 function hminus_ff_john(λ::Unitful.Length, temperature::Unitful.Temperature,
                         h_ground_pop::NumberDensity, electron_density::NumberDensity)
     λμ = ustrip(λ |> u"μm")
-    if λμ > 0.3645 
-        table = 
+    if λμ > 0.3645
+        table =
           [    0.0000     0.0000      0.0000      0.0000     0.0000    0.0000
             2483.3460   285.8270  -2054.2910   2827.7760 -1341.5370  208.9520
            -3449.8890 -1158.3820   8746.5230 -11485.6320  5303.6090 -812.9390
@@ -318,8 +328,8 @@ function hminus_ff_john(λ::Unitful.Length, temperature::Unitful.Temperature,
     λinv = 1.0 / λμ
     κ = 0.0
     for i in 1:6
-        κ += sqrtθ^(1 + i) * (λμ^2 * table[i, 1] + table[i, 2] + 
-                                λinv * (table[i, 3] + λinv * (table[i, 4] + 
+        κ += sqrtθ^(1 + i) * (λμ^2 * table[i, 1] + table[i, 2] +
+                                λinv * (table[i, 3] + λinv * (table[i, 4] +
                                 λinv * (table[i, 5] + λinv * table[i, 6]))))
     end
     # NOTE: in RH temperature from electron pressure is set to 5040 K!
@@ -346,7 +356,7 @@ function hminus_bf_john(λ::Unitful.Length, temperature::Unitful.Temperature,
     λidiff = max(0.0, 1.0 / λμ - 1.0 / λ0)  # cases beyond λ0 set to zero
     σλ = 1e-18 * λμ^3 * λidiff^1.5
     fλ = 0.0
-    if λμ < λ1 
+    if λμ < λ1
         λidiff = 1.0 / λ1 - 1.0 / λ0
     end
     for n in 1:6
@@ -354,7 +364,7 @@ function hminus_bf_john(λ::Unitful.Length, temperature::Unitful.Temperature,
     end
     σλ *= fλ
     α = h_k * c_0
-    κ = 0.750 * sqrt(temp)^-5 * exp(α / (λ0*u"μm" * temperature)) * 
+    κ = 0.750 * sqrt(temp)^-5 * exp(α / (λ0*u"μm" * temperature)) *
        (1 - exp(-α / (λ * temperature))) * σλ * 1e-3u"m^5/J"
     return κ * h_ground_pop * electron_density * k_B * temperature
 end
@@ -367,12 +377,12 @@ end
     hydrogenic_ff(charge::Int, ν::Unitful.Frequency, temperature::Unitful.Temperature,
                   electron_density::NumberDensity, ion_density::NumberDensity)
 
-Compute free-free extinction for a hydrogen-like species. Following 
-Mihalas (1978) p. 101 and 
+Compute free-free extinction for a hydrogen-like species. Following
+Mihalas (1978) p. 101 and
 [Rutten's IART](https://www.uio.no/studier/emner/matnat/astro/AST4310/h20/pensumliste/iart.pdf)
 p 68. For the hydrogen case, `ion_density` is the proton density (H II).
 """
-function hydrogenic_ff(ν::Unitful.Frequency, temperature::Unitful.Temperature, 
+function hydrogenic_ff(ν::Unitful.Frequency, temperature::Unitful.Temperature,
                        electron_density::NumberDensity, ion_density::NumberDensity, charge::Int)
     ν = ν |> u"s^-1"
     stimulated_emission = exp(-h_k * ν / temperature)
@@ -382,15 +392,15 @@ end
 
 """
     function hydrogenic_bf(charge::Real, ν::Unitful.Frequency, ν_edge::Unitful.Frequency,
-                           n_eff::AbstractFloat, temperature::Unitful.Temperature, 
+                           n_eff::AbstractFloat, temperature::Unitful.Temperature,
                            species_density::NumberDensity)
 
-Compute bound-free extinction for a hydrogen-like species. Following 
-Mihalas (1978) p. 99 and 
+Compute bound-free extinction for a hydrogen-like species. Following
+Mihalas (1978) p. 99 and
 [Rutten's IART](https://www.uio.no/studier/emner/matnat/astro/AST4310/h20/pensumliste/iart.pdf)
 p 70. Using simplified constant and expression for threshold cross section.
 """
-function hydrogenic_bf(ν::Unitful.Frequency, ν_edge::Unitful.Frequency, 
+function hydrogenic_bf(ν::Unitful.Frequency, ν_edge::Unitful.Frequency,
                        temperature::Unitful.Temperature, species_density::NumberDensity,
                        charge::Real, n_eff::AbstractFloat)
     if ν < ν_edge
@@ -407,29 +417,29 @@ end
 #=----------------------------------------------------------------------------
                             Recipes from Bell (1980)
 ----------------------------------------------------------------------------=#
-const bell_ff_λ = [   0.0,  350.5,  414.2,   506.3,   569.6,  650.9,  759.4, 
+const bell_ff_λ = [   0.0,  350.5,  414.2,   506.3,   569.6,  650.9,  759.4,
                     911.3, 1139.1, 1518.8,  1822.6,  2278.3, 3037.7, 3645.2,
                    4556.5, 6075.3, 9113.0, 11391.3, 15188.3]   # in nm
 const bell_ff_t = 5040.0 ./ [0.5, 0.8, 1.0, 1.2, 1.6, 2.0, 2.8, 3.6]  # in K
-const bell_ff_κ = 
-    [0.00e+00  0.00e+00  0.00e+00  0.00e+00  0.00e+00  0.00e+00  0.00e+00  0.00e+00 
-     4.17e-02  6.10e-02  7.34e-02  8.59e-02  1.11e-01  1.37e-01  1.87e-01  2.40e-01 
-     5.84e-02  8.43e-02  1.01e-01  1.17e-01  1.49e-01  1.82e-01  2.49e-01  3.16e-01 
-     8.70e-02  1.24e-01  1.46e-01  1.67e-01  2.10e-01  2.53e-01  3.39e-01  4.27e-01 
-     1.10e-01  1.54e-01  1.80e-01  2.06e-01  2.55e-01  3.05e-01  4.06e-01  5.07e-01 
-     1.43e-01  1.98e-01  2.30e-01  2.59e-01  3.17e-01  3.75e-01  4.92e-01  6.09e-01 
-     1.92e-01  2.64e-01  3.03e-01  3.39e-01  4.08e-01  4.76e-01  6.13e-01  7.51e-01 
-     2.73e-01  3.71e-01  4.22e-01  4.67e-01  5.52e-01  6.33e-01  7.97e-01  9.63e-01 
-     4.20e-01  5.64e-01  6.35e-01  6.97e-01  8.06e-01  9.09e-01  1.11e+00  1.32e+00 
-     7.36e-01  9.75e-01  1.09e+00  1.18e+00  1.34e+00  1.48e+00  1.74e+00  2.01e+00 
-     1.05e+00  1.39e+00  1.54e+00  1.66e+00  1.87e+00  2.04e+00  2.36e+00  2.68e+00 
-     1.63e+00  2.14e+00  2.36e+00  2.55e+00  2.84e+00  3.07e+00  3.49e+00  3.90e+00 
-     2.89e+00  3.76e+00  4.14e+00  4.44e+00  4.91e+00  5.28e+00  5.90e+00  6.44e+00 
-     4.15e+00  5.38e+00  5.92e+00  6.35e+00  6.99e+00  7.50e+00  8.32e+00  9.02e+00 
-     6.47e+00  8.37e+00  9.20e+00  9.84e+00  1.08e+01  1.16e+01  1.28e+01  1.38e+01 
-     1.15e+01  1.48e+01  1.63e+01  1.74e+01  1.91e+01  2.04e+01  2.24e+01  2.40e+01 
-     2.58e+01  3.33e+01  3.65e+01  3.90e+01  4.27e+01  4.54e+01  4.98e+01  5.33e+01 
-     4.03e+01  5.20e+01  5.70e+01  6.08e+01  6.65e+01  7.08e+01  7.76e+01  8.30e+01 
+const bell_ff_κ =
+    [0.00e+00  0.00e+00  0.00e+00  0.00e+00  0.00e+00  0.00e+00  0.00e+00  0.00e+00
+     4.17e-02  6.10e-02  7.34e-02  8.59e-02  1.11e-01  1.37e-01  1.87e-01  2.40e-01
+     5.84e-02  8.43e-02  1.01e-01  1.17e-01  1.49e-01  1.82e-01  2.49e-01  3.16e-01
+     8.70e-02  1.24e-01  1.46e-01  1.67e-01  2.10e-01  2.53e-01  3.39e-01  4.27e-01
+     1.10e-01  1.54e-01  1.80e-01  2.06e-01  2.55e-01  3.05e-01  4.06e-01  5.07e-01
+     1.43e-01  1.98e-01  2.30e-01  2.59e-01  3.17e-01  3.75e-01  4.92e-01  6.09e-01
+     1.92e-01  2.64e-01  3.03e-01  3.39e-01  4.08e-01  4.76e-01  6.13e-01  7.51e-01
+     2.73e-01  3.71e-01  4.22e-01  4.67e-01  5.52e-01  6.33e-01  7.97e-01  9.63e-01
+     4.20e-01  5.64e-01  6.35e-01  6.97e-01  8.06e-01  9.09e-01  1.11e+00  1.32e+00
+     7.36e-01  9.75e-01  1.09e+00  1.18e+00  1.34e+00  1.48e+00  1.74e+00  2.01e+00
+     1.05e+00  1.39e+00  1.54e+00  1.66e+00  1.87e+00  2.04e+00  2.36e+00  2.68e+00
+     1.63e+00  2.14e+00  2.36e+00  2.55e+00  2.84e+00  3.07e+00  3.49e+00  3.90e+00
+     2.89e+00  3.76e+00  4.14e+00  4.44e+00  4.91e+00  5.28e+00  5.90e+00  6.44e+00
+     4.15e+00  5.38e+00  5.92e+00  6.35e+00  6.99e+00  7.50e+00  8.32e+00  9.02e+00
+     6.47e+00  8.37e+00  9.20e+00  9.84e+00  1.08e+01  1.16e+01  1.28e+01  1.38e+01
+     1.15e+01  1.48e+01  1.63e+01  1.74e+01  1.91e+01  2.04e+01  2.24e+01  2.40e+01
+     2.58e+01  3.33e+01  3.65e+01  3.90e+01  4.27e+01  4.54e+01  4.98e+01  5.33e+01
+     4.03e+01  5.20e+01  5.70e+01  6.08e+01  6.65e+01  7.08e+01  7.76e+01  8.30e+01
      7.16e+01  9.23e+01  1.01e+02  1.08e+02  1.18e+02  1.26e+02  1.38e+02  1.47e+02]
 # Linear extrapolation in λ, flat extrapolation in θ
 const bell_ff_interp = LinearInterpolation((bell_ff_λ, bell_ff_t[end:-1:1]),
@@ -448,7 +458,7 @@ function h2minus_ff(λ::Unitful.Length, temperature::Unitful.Temperature,
     electron_pressure = electron_density * k_B * temperature
     λi = ustrip(λ |> u"nm")   # convert to units of table
     temp = ustrip(temperature |> u"K")
-    κ = bell_ff_interp(λi, temp)::Float64 * 1e-29u"m^5/J" 
+    κ = bell_ff_interp(λi, temp)::Float64 * 1e-29u"m^5/J"
     return h2_density * electron_pressure * κ |> u"m^-1"
 end
 
@@ -460,7 +470,7 @@ const bates_λ = 1f7 ./ [   500,   1000,   1500,   2000,   2500,   3000,
                           3500,   4000,   5000,   6000,   7000,   8000,
                           9000, 10_000, 12_000, 14_000, 16_000, 18_000,
                         20_000, 22_000, 24_000, 26_000,  Inf32]  # in nm
-const bates_t = [2.5f+03, 3.0f+03, 3.5f+03, 4.0f+03, 5.0f+03, 
+const bates_t = [2.5f+03, 3.0f+03, 3.5f+03, 4.0f+03, 5.0f+03,
                     6.0f+03, 7.0f+03, 8.0f+03, 1.0f+04, 1.2f+04]  # in K
 # H2plus bf + ff extinction coefficient in 1e-49 m^5
 const bates_κ = convert(Array{Float32, 2},
@@ -531,9 +541,9 @@ function h2plus_ff(λ::Unitful.Length, temperature::Unitful.Temperature,
                    h_ground_pop::NumberDensity, proton_density::NumberDensity)
     λi = convert(Float32, ustrip(λ |> u"nm"))   # convert to units of table
     temp = convert(Float32, ustrip(temperature |> u"K"))
-    κ = bates_ff_interp(λi, temp)::Float32 * u"m^5" 
+    κ = bates_ff_interp(λi, temp)::Float32 * u"m^5"
     # Table in 1e-49 m^5, splitting in two to prevent overflow in Float32 inputs
-    return κ * (h_ground_pop * 1f-25) * (proton_density * 1f-24) 
+    return κ * (h_ground_pop * 1f-25) * (proton_density * 1f-24)
 end
 
 """
@@ -548,7 +558,7 @@ function h2plus_bf(λ::Unitful.Length, temperature::Unitful.Temperature,
                    h_ground_pop::NumberDensity, proton_density::NumberDensity)
     λi = convert(Float32, ustrip(λ |> u"nm"))  # convert to units of table
     temp = convert(Float32, ustrip(temperature |> u"K"))
-    κ = bates_bf_interp(λi, temp)::Float32 * u"m^5" 
+    κ = bates_bf_interp(λi, temp)::Float32 * u"m^5"
     # Table in 1e-49 m^5, splitting in two to prevent overflow in Float32 inputs
     return κ * (h_ground_pop * 1f-25) * (proton_density * 1f-24)
 end
@@ -568,9 +578,9 @@ const victor_h2_interp = LinearInterpolation(victor_h2_λ, victor_h2_σ, extrapo
 """
     function rayleigh_h2(λ::Unitful.Length, h2_density::NumberDensity)
 
-Compute extinction from Rayleigh scattering from H2 molecules. Uses recipe from 
+Compute extinction from Rayleigh scattering from H2 molecules. Uses recipe from
 [Victor and Dalgarno (1969)](https://aip.scitation.org/doi/pdf/10.1063/1.1671412),
-J. Chem. Phys. 50, 2535, page 2538 for λ <= 632.80, and the recipe from 
+J. Chem. Phys. 50, 2535, page 2538 for λ <= 632.80, and the recipe from
 [Tarafdar & Vardya (1973)](https://ui.adsabs.harvard.edu/abs/1973MNRAS.163..261T/abstract)
 page 272, for λ > 632.80.
 """
@@ -597,18 +607,18 @@ end
 """
     function rayleigh_h(λ::Unitful.Length, h_ground_pop::NumberDensity)
 
-Compute extinction from Rayleigh scattering from H atoms. Uses recipe from 
+Compute extinction from Rayleigh scattering from H atoms. Uses recipe from
 Dalgarno (1962), Geophysics Corp. of America, Technical Report No. 62-28-A
 (unavailable), which is accurate to 1% for λ > 125.0 nm.
 """
 function rayleigh_h(λ::Unitful.Length, h_ground_pop::NumberDensity)
     λi = ustrip(λ |> u"Å")
-    if λi >= 1215.7 
+    if λi >= 1215.7
         λ2 = 1 / λi^2
         # First coefficient has conversion from Mbarn to m^2. From RH:
         σ_h = (5.81e-17 * λ2^2 * (1 + 2.452e6 * λ2 +  4.801e12 * λ2^2)) * u"m^2"
     else
-        σ_h = 0.0u"m^2" 
+        σ_h = 0.0u"m^2"
     end
     return σ_h * h_ground_pop
 end
