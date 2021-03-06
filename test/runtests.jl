@@ -42,7 +42,7 @@ end
         @test all(Transparency.hminus_bf_john.(λ, 5000u"K", 1e24u"m^-3", 1e25u"m^-3") ≈ [
             2.5257481813577, 65.22804371400161, 1.8270928643449478]u"m^-1")
         temp = [2000, 5000, 10000]u"K"
-        @test Transparency.calc_hminus_pop.(1e13u"m^-3", temp, 1e14u"m^-3") ≈
+        @test Transparency.calc_hminus_density.(1e13u"m^-3", temp, 1e14u"m^-3") ≈
             [91.94566524525405, 1.6850912396740527, 0.24835857088939245]u"m^-3"
         @test hminus_bf.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="geltman") ≈
             Transparency.hminus_bf_geltman.(λ, temp, 1u"m^-3", 1u"m^-3")

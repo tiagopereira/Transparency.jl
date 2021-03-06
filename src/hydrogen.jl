@@ -14,9 +14,13 @@ Includes:
                             Catch-all functions
 ----------------------------------------------------------------------------=#
 """
-    function hminus_ff(λ::Unitful.Length, temperature::Unitful.Temperature,
-                       h_ground_pop::NumberDensity, electron_density::NumberDensity;
-                       recipe::String="stilley")
+    hminus_ff(
+        λ::Unitful.Length,
+        temperature::Unitful.Temperature,
+        h_neutral_density::NumberDensity,
+        electron_density::NumberDensity;
+        recipe::String="stilley"
+    )
 
 Compute free-free extinction from H minus ion. Recipe can be one of:
 
@@ -28,22 +32,30 @@ Compute free-free extinction from H minus ion. Recipe can be one of:
   [John (1988)](https://ui.adsabs.harvard.edu/abs/1988A%26A...193..189J/abstract),
   which is valid beyond 9113 nm but may not be good below 364.5 nm.
 """
-function hminus_ff(λ::Unitful.Length, temperature::Unitful.Temperature,
-                   h_ground_pop::NumberDensity, electron_density::NumberDensity;
-                   recipe::String="stilley")
+function hminus_ff(
+    λ::Unitful.Length,
+    temperature::Unitful.Temperature,
+    h_neutral_density::NumberDensity,
+    electron_density::NumberDensity;
+    recipe::String="stilley"
+)
     if recipe == "stilley"
-        hminus_ff_stilley(λ, temperature, h_ground_pop, electron_density)
+        hminus_ff_stilley(λ, temperature, h_neutral_density, electron_density)
     elseif recipe == "john"
-        hminus_ff_john(λ, temperature, h_ground_pop, electron_density)
+        hminus_ff_john(λ, temperature, h_neutral_density, electron_density)
     else
         throw("NotImplemented recipe $recipe")
     end
 end
 
 """
-    function hminus_bf(λ::Unitful.Length, temperature::Unitful.Temperature,
-                       h_ground_pop::NumberDensity, electron_density::NumberDensity;
-                       recipe::String="stilley")
+    hminus_bf(
+        λ::Unitful.Length,
+        temperature::Unitful.Temperature,
+        h_neutral_density::NumberDensity,
+        electron_density::NumberDensity;
+        recipe::String="geltman"
+    )
 
 Compute bound-free extinction from H minus ion. Recipe can be one of:
 
@@ -54,13 +66,17 @@ Compute bound-free extinction from H minus ion. Recipe can be one of:
   [John (1988)](https://ui.adsabs.harvard.edu/abs/1988A%26A...193..189J/abstract),
   which is valid beyond 9113 nm but may not be good below 364.5 nm.
 """
-function hminus_bf(λ::Unitful.Length, temperature::Unitful.Temperature,
-                   h_ground_pop::NumberDensity, electron_density::NumberDensity;
-                   recipe::String="geltman")
+function hminus_bf(
+    λ::Unitful.Length,
+    temperature::Unitful.Temperature,
+    h_neutral_density::NumberDensity,
+    electron_density::NumberDensity;
+    recipe::String="geltman"
+)
     if recipe == "geltman"
-        hminus_bf_geltman(λ, temperature, h_ground_pop, electron_density)
+        hminus_bf_geltman(λ, temperature, h_neutral_density, electron_density)
     elseif recipe == "john"
-        hminus_bf_john(λ, temperature, h_ground_pop, electron_density)
+        hminus_bf_john(λ, temperature, h_neutral_density, electron_density)
     else
         throw("NotImplemented recipe $recipe")
     end
@@ -108,6 +124,7 @@ const kurucz_ff_interp = LinearInterpolation((kurucz_ff_table_y, kurucz_ff_table
 
 """
     gaunt_ff(ν::Unitful.Frequency, temperature::Unitful.Temperature, charge::Int)
+    gaunt_ff(λ::Unitful.Length, temperature::Unitful.Temperature, charge::Int)
 
 Compute Gaunt factor for free-free based on [Karzas and Latter (1961, ApJ Suppl 6, 167)]
 (https://ui.adsabs.harvard.edu/abs/1961ApJS....6..167K/abstract)
@@ -120,14 +137,6 @@ function gaunt_ff(ν::Unitful.Frequency, temperature::Unitful.Temperature, charg
     return kurucz_ff_interp(lookup_y, lookup_x)::Float64
 end
 
-"""
-    gaunt_ff(λ::Unitful.Length, temperature::Unitful.Temperature, charge::Int)
-
-Compute Gaunt factor for free-free based on [Karzas and Latter (1961, ApJ Suppl 6, 167)]
-(https://ui.adsabs.harvard.edu/abs/1961ApJS....6..167K/abstract)
-fit in
-[Kurucz (1970, SAO Special Report no. 309), page 77](https://ui.adsabs.harvard.edu/abs/1970SAOSR.309.....K/abstract)
-"""
 function gaunt_ff(λ::Unitful.Length, temperature::Unitful.Temperature, charge::Int)
     return gaunt_ff(c_0 / λ, temperature, charge)
 end
@@ -161,7 +170,7 @@ end
 """
     n_eff(energy_upper::Unitful.Energy, energy_lower::Unitful.Energy, Z::Integer)
 
-Calculate the effective principal quantum number for a given energy difference
+Compute the effective principal quantum number for a given energy difference
 and atomic number `Z`.
 """
 function n_eff(energy_upper::Unitful.Energy, energy_lower::Unitful.Energy, Z::Integer)
@@ -215,22 +224,31 @@ const stilley_ff_interp = LinearInterpolation((stilley_ff_λ, stilley_ff_t[end:-
                              stilley_ff_table[:, end:-1:1], extrapolation_bc=Line())
 
 """
-    hminus_ff_stilley(λ::Unitful.Length, temperature::Unitful.Temperature,
-                      h_ground_pop::NumberDensity, electron_density::NumberDensity)
+    hminus_ff_stilley(
+        λ::Unitful.Length,
+        temperature::Unitful.Temperature,
+        h_neutral_density::NumberDensity,
+        electron_density::NumberDensity
+    )
 
-Compute extinction from H minus ion. Interpolates table from
+Compute free-free extinction from H minus ion, for a given wavelength, temperature,
+density of neutral hydrogen atoms `h_neutral_density`, and electron density.
+Interpolates table from
 [Stilley & Callaway (1970)](https://ui.adsabs.harvard.edu/abs/1970ApJ...160..245S/abstract),
 page 255, which is valid for λ up to 9113 nm.
 """
-function hminus_ff_stilley(λ::Unitful.Length, temperature::Unitful.Temperature,
-                           h_ground_pop::NumberDensity, electron_density::NumberDensity)
+function hminus_ff_stilley(
+    λ::Unitful.Length,
+    temperature::Unitful.Temperature,
+    h_neutral_density::NumberDensity,
+    electron_density::NumberDensity
+)
     electron_pressure = electron_density * k_B * temperature
     λi = ustrip(λ |> u"nm")   # convert to units of table
     temp = ustrip(temperature |> u"K")
-    kappa = stilley_ff_interp(λi, temp)::Float64 * 1e-29u"m^5/J"
-    return h_ground_pop * electron_pressure * kappa |> u"m^-1"
+    kappa = stilley_ff_interp(λi, temp)::Float64 * 1e-29u"m^4/N"
+    return h_neutral_density * electron_pressure * kappa |> u"m^-1"
 end
-
 
 #=----------------------------------------------------------------------------
                             Recipes from Geltman
@@ -250,46 +268,60 @@ const geltman_bf_interp = LinearInterpolation(geltman_bf_λ, geltman_bf_σ, extr
 #hminus_bf_interp2 = LinearInterpolation(0:50:1600, hminus_bf_σ[1:end-1], extrapolation_bc=Line())
 
 """
-    hminus_bf_geltman(λ::Unitful.Length, temperature::Unitful.Temperature,
-                      h_ground_pop::NumberDensity, electron_density::NumberDensity)
+    hminus_bf_geltman(
+        λ::Unitful.Length,
+        temperature::Unitful.Temperature,
+        h_minus_density::NumberDensity
+    )
+    hminus_bf_geltman(
+        λ::Unitful.Length,
+        temperature::Unitful.Temperature,
+        h_neutral_density::NumberDensity,
+        electron_density::NumberDensity
+    )
 
 Compute extinction from H minus ion, from input H minus populations. Uses recipe from
 [Geltman (1962)](https://ui.adsabs.harvard.edu/abs/1962ApJ...136..935G/abstract)
 """
-function hminus_bf_geltman(λ::Unitful.Length, temperature::Unitful.Temperature,
-                           h_minus_pop::NumberDensity)
+function hminus_bf_geltman(
+    λ::Unitful.Length,
+    temperature::Unitful.Temperature,
+    h_minus_density::NumberDensity
+)
     λi = ustrip(λ |> u"nm")   # convert to units of table
     κ = geltman_bf_interp(λi)::Float64 * 1e-21u"m^2"
     stimulated_emission = exp(-hc_k / (λ * temperature))
-    return h_minus_pop * (1 - stimulated_emission) * κ
+    return h_minus_density * (1 - stimulated_emission) * κ
+end
+
+function hminus_bf_geltman(
+    λ::Unitful.Length,
+    temperature::Unitful.Temperature,
+    h_neutral_density::NumberDensity,
+    electron_density::NumberDensity
+)
+    h_minus_density = calc_hminus_density(h_neutral_density, temperature, electron_density)
+    return hminus_bf_geltman(λ, temperature, h_minus_density)
 end
 
 """
-    hminus_bf_geltman(λ::Unitful.Length, temperature::Unitful.Temperature,
-                      h_ground_pop::NumberDensity, electron_density::NumberDensity)
+    calc_hminus_density(
+        h_neutral_density::NumberDensity,
+        temperature::Unitful.Temperature,
+        electron_density::NumberDensity
+    )
 
-Compute extinction from H minus ion, from input hydrogen ground populations
-and electron density. Uses recipe from
-[Geltman (1962)](https://ui.adsabs.harvard.edu/abs/1962ApJ...136..935G/abstract)
+Compute H minus populations based on electron density, temperature, and
+density of neutral hydrogen atoms.
 """
-function hminus_bf_geltman(λ::Unitful.Length, temperature::Unitful.Temperature,
-                           h_ground_pop::NumberDensity, electron_density::NumberDensity)
-    h_minus_pop = calc_hminus_pop(h_ground_pop, temperature, electron_density)
-    return hminus_bf_geltman(λ, temperature, h_minus_pop)
-end
-
-"""
-    calc_hminus_pop(h_ground_pop::NumberDensity, temperature::Unitful.Temperature,
-                    electron_density::NumberDensity)
-
-Calculate H minus populations based on electron density, temperature, and
-ground-level populations of hydrogen.
-"""
-function calc_hminus_pop(h_ground_pop::NumberDensity, temperature::Unitful.Temperature,
-                         electron_density::NumberDensity)
+function calc_hminus_density(
+    h_neutral_density::NumberDensity,
+    temperature::Unitful.Temperature,
+    electron_density::NumberDensity
+)
     tmp = (ustrip(saha_const) / ustrip(temperature |> u"K"))^(3/2) * u"m^3"
     ϕ = tmp * exp(hminusχ / (k_B * temperature)) / 4
-    return h_ground_pop * electron_density * ϕ
+    return h_neutral_density * electron_density * ϕ
 end
 
 
@@ -297,15 +329,23 @@ end
                             Recipes from John
 ----------------------------------------------------------------------------=#
 """
-    function hminus_ff_john(λ::Unitful.Length, temperature::Unitful.Temperature,
-                            h_ground_pop::NumberDensity, electron_density::NumberDensity)
+    hminus_ff_john(
+        λ::Unitful.Length,
+        temperature::Unitful.Temperature,
+        h_neutral_density::NumberDensity,
+        electron_density::NumberDensity
+    )
 
-Compute extinction from H minus ion. Uses recipe from
+Compute free-free extinction from H minus ion. Uses recipe from
 [John (1988)](https://ui.adsabs.harvard.edu/abs/1988A%26A...193..189J/abstract),
 which is valid beyond 9113 nm but may not be good below 364.5 nm.
 """
-function hminus_ff_john(λ::Unitful.Length, temperature::Unitful.Temperature,
-                        h_ground_pop::NumberDensity, electron_density::NumberDensity)
+function hminus_ff_john(
+    λ::Unitful.Length,
+    temperature::Unitful.Temperature,
+    h_neutral_density::NumberDensity,
+    electron_density::NumberDensity
+)
     λμ = ustrip(λ |> u"μm")
     if λμ > 0.3645
         table =
@@ -334,20 +374,28 @@ function hminus_ff_john(λ::Unitful.Length, temperature::Unitful.Temperature,
     end
     # NOTE: in RH temperature from electron pressure is set to 5040 K!
     # Also, RH uses sometimes nHminus = nH * pe, other times atmos.nHmin...
-    return κ * 1e-32u"m^5/J" * h_ground_pop * electron_density * k_B * temperature
+    return κ * 1e-32u"m^4/N" * h_neutral_density * electron_density * k_B * temperature
 end
 
 """
-    function hminus_bf_john(λ::Unitful.Length, temperature::Unitful.Temperature,
-                            h_ground_pop::NumberDensity, electron_density::NumberDensity)
+    hminus_bf_john(
+        λ::Unitful.Length,
+        temperature::Unitful.Temperature,
+        h_neutral_density::NumberDensity,
+        electron_density::NumberDensity
+    )
 
 Compute extinction from H minus ion. Uses recipe from
 [John (1988)](https://ui.adsabs.harvard.edu/abs/1988A%26A...193..189J/abstract),
 which is valid for  0.125 <= λ (μm) <= 1.6419. Seems to already include stimulated
 emission.
 """
-function hminus_bf_john(λ::Unitful.Length, temperature::Unitful.Temperature,
-                        h_ground_pop::NumberDensity, electron_density::NumberDensity)
+function hminus_bf_john(
+    λ::Unitful.Length,
+    temperature::Unitful.Temperature,
+    h_neutral_density::NumberDensity,
+    electron_density::NumberDensity
+)
     table = [152.519, 49.534, -118.858, 92.536, -34.194, 4.982]
     λμ = ustrip(λ |> u"μm")
     λ0 = ustrip(1.6419u"μm")
@@ -365,8 +413,8 @@ function hminus_bf_john(λ::Unitful.Length, temperature::Unitful.Temperature,
     σλ *= fλ
     α = h_k * c_0
     κ = 0.750 * sqrt(temp)^-5 * exp(α / (λ0*u"μm" * temperature)) *
-       (1 - exp(-α / (λ * temperature))) * σλ * 1e-3u"m^5/J"
-    return κ * h_ground_pop * electron_density * k_B * temperature
+       (1 - exp(-α / (λ * temperature))) * σλ * 1e-3u"m^4/N"
+    return κ * h_neutral_density * electron_density * k_B * temperature
 end
 
 
@@ -374,35 +422,55 @@ end
                             Recipes from Mihalas
 ----------------------------------------------------------------------------=#
 """
-    hydrogenic_ff(charge::Int, ν::Unitful.Frequency, temperature::Unitful.Temperature,
-                  electron_density::NumberDensity, ion_density::NumberDensity)
+    hydrogenic_ff(
+        ν::Unitful.Frequency,
+        temperature::Unitful.Temperature,
+        electron_density::NumberDensity,
+        species_density::NumberDensity,
+        charge::Int
+    )
 
 Compute free-free extinction for a hydrogen-like species. Following
 Mihalas (1978) p. 101 and
 [Rutten's IART](https://www.uio.no/studier/emner/matnat/astro/AST4310/h20/pensumliste/iart.pdf)
 p 68. For the hydrogen case, `ion_density` is the proton density (H II).
 """
-function hydrogenic_ff(ν::Unitful.Frequency, temperature::Unitful.Temperature,
-                       electron_density::NumberDensity, ion_density::NumberDensity, charge::Int)
+function hydrogenic_ff(
+    ν::Unitful.Frequency,
+    temperature::Unitful.Temperature,
+    electron_density::NumberDensity,
+    species_density::NumberDensity,
+    charge::Int
+)
     ν = ν |> u"s^-1"
     stimulated_emission = exp(-h_k * ν / temperature)
     return (αff_const * charge^2 / sqrt(temperature) * ν^-3 * electron_density *
-      ion_density * (1 - stimulated_emission) * gaunt_ff(ν, temperature, charge))
+       species_density * (1 - stimulated_emission) * gaunt_ff(ν, temperature, charge))
 end
 
 """
-    function hydrogenic_bf(charge::Real, ν::Unitful.Frequency, ν_edge::Unitful.Frequency,
-                           n_eff::AbstractFloat, temperature::Unitful.Temperature,
-                           species_density::NumberDensity)
+    hydrogenic_bf(
+        ν::Unitful.Frequency,
+        ν_edge::Unitful.Frequency,
+        temperature::Unitful.Temperature,
+        species_density::NumberDensity,
+        charge::Real,
+        n_eff::AbstractFloat
+    )
 
 Compute bound-free extinction for a hydrogen-like species. Following
 Mihalas (1978) p. 99 and
 [Rutten's IART](https://www.uio.no/studier/emner/matnat/astro/AST4310/h20/pensumliste/iart.pdf)
 p 70. Using simplified constant and expression for threshold cross section.
 """
-function hydrogenic_bf(ν::Unitful.Frequency, ν_edge::Unitful.Frequency,
-                       temperature::Unitful.Temperature, species_density::NumberDensity,
-                       charge::Real, n_eff::AbstractFloat)
+function hydrogenic_bf(
+    ν::Unitful.Frequency,
+    ν_edge::Unitful.Frequency,
+    temperature::Unitful.Temperature,
+    species_density::NumberDensity,
+    charge::Real,
+    n_eff::AbstractFloat
+)
     if ν < ν_edge
         return 0 * αbf_const * species_density
     else
@@ -446,19 +514,27 @@ const bell_ff_interp = LinearInterpolation((bell_ff_λ, bell_ff_t[end:-1:1]),
                    bell_ff_κ[:, end:-1:1], extrapolation_bc=(Line(), Flat()))
 
 """
-    h2minus_ff(λ::Unitful.Length, temperature::Unitful.Temperature,
-               H2_density::NumberDensity, electron_density::NumberDensity)
+    h2minus_ff(
+        λ::Unitful.Length,
+        temperature::Unitful.Temperature,
+        h2_density::NumberDensity,
+        electron_density::NumberDensity
+    )
 
-Calculate extinction from H2^- molecule, according to recipe from
+Compute extinction from H2^- molecule, according to recipe from
 [Bell (1980)](https://ui.adsabs.harvard.edu/abs/1980JPhB...13.1859B/abstract),
 page 1863. Stimulated emission is included.
 """
-function h2minus_ff(λ::Unitful.Length, temperature::Unitful.Temperature,
-                    h2_density::NumberDensity, electron_density::NumberDensity)
+function h2minus_ff(
+    λ::Unitful.Length,
+    temperature::Unitful.Temperature,
+    h2_density::NumberDensity,
+    electron_density::NumberDensity
+)
     electron_pressure = electron_density * k_B * temperature
     λi = ustrip(λ |> u"nm")   # convert to units of table
     temp = ustrip(temperature |> u"K")
-    κ = bell_ff_interp(λi, temp)::Float64 * 1e-29u"m^5/J"
+    κ = bell_ff_interp(λi, temp)::Float64 * 1e-29u"m^4/N"
     return h2_density * electron_pressure * κ |> u"m^-1"
 end
 
@@ -531,36 +607,44 @@ const bates_bf_interp = LinearInterpolation((bates_λ[end:-1:1], bates_t),
 
 """
     h2plus_ff(λ::Unitful.Length, temperature::Unitful.Temperature,
-              h_ground_pop::NumberDensity, proton_density::NumberDensity)
+              h_neutral_density::NumberDensity, proton_density::NumberDensity)
 
-Calculate free-free extinction from H2plus molecule, according to recipe from
+Compute free-free extinction from H2plus molecule, according to recipe from
 [Bates (1952)](https://ui.adsabs.harvard.edu/abs/1952MNRAS.112...40B/abstract),
 page 43.
 """
-function h2plus_ff(λ::Unitful.Length, temperature::Unitful.Temperature,
-                   h_ground_pop::NumberDensity, proton_density::NumberDensity)
+function h2plus_ff(
+    λ::Unitful.Length,
+    temperature::Unitful.Temperature,
+    h_neutral_density::NumberDensity,
+    proton_density::NumberDensity
+)
     λi = convert(Float32, ustrip(λ |> u"nm"))   # convert to units of table
     temp = convert(Float32, ustrip(temperature |> u"K"))
     κ = bates_ff_interp(λi, temp)::Float32 * u"m^5"
     # Table in 1e-49 m^5, splitting in two to prevent overflow in Float32 inputs
-    return κ * (h_ground_pop * 1f-25) * (proton_density * 1f-24)
+    return κ * (h_neutral_density * 1f-25) * (proton_density * 1f-24)
 end
 
 """
     h2plus_bf(λ::Unitful.Length, temperature::Unitful.Temperature,
-              h_ground_pop::NumberDensity, proton_density::NumberDensity)
+              h_neutral_density::NumberDensity, proton_density::NumberDensity)
 
-Calculate bound-free extinction from H2plus molecule, according to recipe from
+Compute bound-free extinction from H2plus molecule, according to recipe from
 [Bates (1952)](https://ui.adsabs.harvard.edu/abs/1952MNRAS.112...40B/abstract),
 page 43.
 """
-function h2plus_bf(λ::Unitful.Length, temperature::Unitful.Temperature,
-                   h_ground_pop::NumberDensity, proton_density::NumberDensity)
+function h2plus_bf(
+    λ::Unitful.Length,
+    temperature::Unitful.Temperature,
+    h_neutral_density::NumberDensity,
+    proton_density::NumberDensity
+)
     λi = convert(Float32, ustrip(λ |> u"nm"))  # convert to units of table
     temp = convert(Float32, ustrip(temperature |> u"K"))
     κ = bates_bf_interp(λi, temp)::Float32 * u"m^5"
     # Table in 1e-49 m^5, splitting in two to prevent overflow in Float32 inputs
-    return κ * (h_ground_pop * 1f-25) * (proton_density * 1f-24)
+    return κ * (h_neutral_density * 1f-25) * (proton_density * 1f-24)
 end
 
 #=----------------------------------------------------------------------------
@@ -605,13 +689,14 @@ end
                   Recipes from Dalgarno (1962)
 ----------------------------------------------------------------------------=#
 """
-    function rayleigh_h(λ::Unitful.Length, h_ground_pop::NumberDensity)
+    function rayleigh_h(λ::Unitful.Length, h_ground_density::NumberDensity)
 
-Compute extinction from Rayleigh scattering from H atoms. Uses recipe from
-Dalgarno (1962), Geophysics Corp. of America, Technical Report No. 62-28-A
+Compute extinction from Rayleigh scattering from H atoms. `h_ground_density`
+is the number density of neutral hydrogen atoms in the ground state.
+Uses recipe from Dalgarno (1962), Geophysics Corp. of America, Technical Report No. 62-28-A
 (unavailable), which is accurate to 1% for λ > 125.0 nm.
 """
-function rayleigh_h(λ::Unitful.Length, h_ground_pop::NumberDensity)
+function rayleigh_h(λ::Unitful.Length, h_ground_density::NumberDensity)
     λi = ustrip(λ |> u"Å")
     if λi >= 1215.7
         λ2 = 1 / λi^2
@@ -620,5 +705,5 @@ function rayleigh_h(λ::Unitful.Length, h_ground_pop::NumberDensity)
     else
         σ_h = 0.0u"m^2"
     end
-    return σ_h * h_ground_pop
+    return σ_h * h_ground_density
 end
