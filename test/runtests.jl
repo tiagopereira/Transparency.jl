@@ -120,6 +120,7 @@ end
         @test dispersion_profile.(0.1, v, wave) == -dispersion_profile.(0.1, -v, wave)
     end
     @test doppler_width(ustrip(c_0) * u"m", 1u"kg",  ustrip(0.5 / k_B) * u"K") ≈ 1u"m"
+    @test doppler_width(ustrip(c_0) / u"s", 1u"kg",  ustrip(0.5 / k_B) * u"K") ≈ 1u"Hz"
 end
 
 @testset "Broadening" begin
