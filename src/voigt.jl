@@ -4,10 +4,10 @@ Computes line profiles and associated quantities.
 
 const invSqrtPi = 1. / sqrt(π)
 
-""" 
-Compute scaled complex complementary error function using 
-[Humlicek (1982, JQSRT 27, 437)](https://doi.org/10.1016/0022-4073(82)90078-4) 
-W4 rational approximations. 
+"""
+Compute scaled complex complementary error function using
+[Humlicek (1982, JQSRT 27, 437)](https://doi.org/10.1016/0022-4073(82)90078-4)
+W4 rational approximations.
 Here, z is defined as z = v + i * a, and returns w(z) = H(a,v) + i * L(a, v).
 """
 function humlicek(z::Complex)
@@ -29,9 +29,9 @@ function humlicek(z::Complex)
         else
             # region IV
             u = t * t
-            nom = t * (36183.31 - u * (3321.99 - u * (1540.787 -  u * 
+            nom = t * (36183.31 - u * (3321.99 - u * (1540.787 -  u *
                    (219.031 - u * (35.7668 - u * (1.320522 - u * .56419))))))
-            den = 32066.6 - u * (24322.8 - u * (9022.23 - u * (2186.18 - 
+            den = 32066.6 - u * (24322.8 - u * (9022.23 - u * (2186.18 -
                     u * (364.219 - u * (61.5704 - u * (1.84144 - u))))))
             w = exp(u) - nom / den
         end
@@ -41,22 +41,27 @@ end
 
 
 """
-Compute the normalised Voigt profile for wavelength, given a damping constant a, 
-dimensionless wavelength v = (λ - λ0) / ΔλD, and Doppler width ΔλD. 
-Uses Humlicek's W4 approximation.
+    voigt_profile(a::AbstractFloat, v::AbstractFloat, ΔD::Unitful.Quantity)
+
+Compute the normalised Voigt profile, given a damping constant `a`, dimensionless
+wavelength or frequency `v`, and Doppler width `ΔD` (wavelength or frequency).
+In the case of wavelength, v = (λ - λ0) / ΔD.
+Uses Humlicek's W4 approximation. Returns in inverse units of ΔD.
 """
-function voigt_profile(a::AbstractFloat, v::AbstractFloat, ΔλD::Unitful.Length)
+function voigt_profile(a::AbstractFloat, v::AbstractFloat, ΔD::Unitful.Quantity)
     z = v + a * im
     profile = real(humlicek(z))
-    return profile * invSqrtPi / ΔλD
+    return profile * invSqrtPi / ΔD
 end
 
 
 """
-Compute the normalised dispersion (or Faraday) profile for wavelength, given a 
-damping constant a, dimensionless wavelength v = (λ - λ0) / ΔλD, 
-and Doppler width ΔλD.
-Uses Humlicek's W4 approximation.
+    dispersion_profile(a::AbstractFloat, v::AbstractFloat, ΔD::Unitful.Quantity)
+
+Compute the normalised dispersion (or Faraday) profile, given a damping constant `a`,
+dimensionless wavelength or frequency `v`, and Doppler width `ΔD` (wavelength or frequency).
+In the case of wavelength, v = (λ - λ0) / ΔD.
+Uses Humlicek's W4 approximation. Returns in inverse units of ΔD.
 """
 function dispersion_profile(a::AbstractFloat, v::AbstractFloat, ΔλD::Unitful.Length)
     z = v + a * im
@@ -66,9 +71,32 @@ end
 
 
 """
-Compute Doppler width for wavelength ΔλD, given a wavelength λ0, 
-mass of atom/ion, and temperature.
+    doppler_width(
+        λ0::Unitful.Length,
+        mass::Unitful.Mass,
+        temperature::Unitful.Temperature
+    )
+    doppler_width(
+        ν0::Unitful.Frequency,
+        mass::Unitful.Mass,
+        temperature::Unitful.Temperature
+    )
+
+Compute Doppler width in wavelength or frequency units, given a rest wavelength/frequency,
+mass of atom/ion, and temperature. Returns in typical units for UV/optical/infrared lines.
 """
-function doppler_width(λ0::Unitful.Length, mass::Unitful.Mass, temperature::Unitful.Temperature)
-    (λ0 / c_0 * sqrt(2 * k_B * temperature / mass)) |> u"nm"
+function doppler_width(
+    λ0::Unitful.Length,
+    mass::Unitful.Mass,
+    temperature::Unitful.Temperature
+)
+    return (λ0 / c_0 * sqrt(2 * k_B * temperature / mass)) |> u"nm"
+end
+
+function doppler_width(
+    ν0::Unitful.Frequency,
+    mass::Unitful.Mass,
+    temperature::Unitful.Temperature
+)
+    return (ν0 / c_0 * sqrt(2 * k_B * temperature / mass)) |> u"THz"
 end
