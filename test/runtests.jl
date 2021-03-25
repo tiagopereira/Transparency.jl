@@ -175,14 +175,6 @@ end
         @test blackbody_ν(c_0 / λ, 5000u"K") ≈ 10.096310186694323u"nW / (m^2 * Hz)"
         @test blackbody_λ(λ, 5000u"K") ≈ blackbody_ν(c_0 / λ, 5000u"K") * c_0 / λ^2
     end
-    @testset "Intensity" begin
-        dist = collect(LinRange(0, 100, 1001))u"m"
-        ext = ones(1001)u"m^-1"
-        S = ones(1001)u"kW / (m^2 * nm)"
-        @test isapprox(calc_intensity(dist, ext, S), 0.9055913235757069u"kW / (m^2 * nm)",
-                       atol=1e-3u"kW / (m^2 * nm)")
-        @test_throws AssertionError calc_intensity(-dist, ext, S)
-    end
     @test Transparency.wavenumber_to_energy(ustrip(1 / (h * c_0)) * u"m^-1") ≈ 1u"J"
 end
 
@@ -249,5 +241,33 @@ end
                        [7.26, 9.27, 11.4, 11.9], atol=1e-3)
         @test isapprox(ustrip.(coll_deexc_hydrogen_PB04.(4, 5, 1, ne, temp) .* c0),
                        [817, 1350, 3400, 10000], atol=1e-3)
+    end
+end
+
+@testset "Formal solvers" begin
+    @testset "Weights" begin
+        @test all(Transparency._w2(60.) .== (1, 1))
+        @test all(Transparency._w2(1.) .≈ (1-exp(-1), 1 - 2*exp(-1)))
+        @test all(Transparency._w2(1f-6) .≈ (9.999995f-7, 4.9999967f-13))
+    end
+    @testset "Piecewise" begin
+        # Constant source function
+        z = collect(LinRange(1, 1e6, 20))u"m"
+        alpha = ones(20) * 1e-20u"m^-1"
+        S = ones(20)*u"kW / (nm * m^2)"
+        @test piecewise_1D_linear(z, alpha, S) ≈ S
+        @test piecewise_1D_nn(z, alpha, S) ≈ S
+        alpha = ones(20) * 1e-1u"m^-1"
+        @test (calc_intensity_brute_force(z, alpha, S) * 2 ≈
+               calc_intensity_brute_force(z, alpha, S*2))
+        @test piecewise_1D_linear(z, alpha, S) ≈ S
+        @test piecewise_1D_nn(z, alpha, S) ≈ S
+        # Linear extinction and source function, test reversibility
+        alpha = collect(LinRange(1e-3, 1e-5, 20)u"m^-1")
+        S = collect(LinRange(1, 100, 20)u"kW / (nm * m^2)")
+        @test (piecewise_1D_linear(z, reverse(alpha), reverse(S); to_end=true) ≈
+               reverse(piecewise_1D_linear(z, alpha, S)))
+        @test (piecewise_1D_nn(z, reverse(alpha), reverse(S); to_end=true) ≈
+               reverse(piecewise_1D_nn(z, alpha, S)))
     end
 end

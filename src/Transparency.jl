@@ -9,7 +9,8 @@ module Transparency
     export calc_Aji, calc_Bji, damping, doppler_width
     export const_unsold, γ_unsold, γ_linear_stark
     export const_quadratic_stark, γ_quadratic_stark, γ_quadratic_stark_gray
-    export AtomicLine, αline_λ, jline_λ, blackbody_λ, blackbody_ν, calc_intensity
+    export AtomicLine, αline_λ, jline_λ, blackbody_λ, blackbody_ν
+    export piecewise_1D_nn, piecewise_1D_linear, calc_intensity_brute_force
     export coll_CE, coll_CI, coll_Ω
     export coll_deexc_hydrogen_PB04, coll_exc_hydrogen_johnson, coll_ion_hydrogen_johnson
     export CE_RH_hydrogen, CI_RH_hydrogen
@@ -33,6 +34,7 @@ module Transparency
     include("line.jl")
     include("broadening.jl")
     include("collisions.jl")
+    include("formal_solvers.jl")
     include("hydrogen.jl")
     include("thomson.jl")
     include("voigt.jl")

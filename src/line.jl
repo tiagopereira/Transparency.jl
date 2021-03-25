@@ -7,21 +7,21 @@ Computes line extinction and associated quantities.
                         χ∞::Unitful.Energy{T}, gu::Int, gl::Int, f_value::T,
                         atom_weight::Unitful.Mass{T}, Z::Int)  where T <: AbstractFloat
 
-Structure for atomic line. 
+Structure for atomic line.
 """
 struct AtomicLine{T <: AbstractFloat}
     Aji::Unitful.Frequency{T}
     # Units of Bij/Bji defined for J_lambda
-    Bji::Unitful.Quantity{T, Unitful.𝐋 * Unitful.𝐓^2 / Unitful.𝐌}  
+    Bji::Unitful.Quantity{T, Unitful.𝐋 * Unitful.𝐓^2 / Unitful.𝐌}
     Bij::Unitful.Quantity{T, Unitful.𝐋 * Unitful.𝐓^2 / Unitful.𝐌}
     λ0::Unitful.Length{T}
     χi::Unitful.Energy{T}
     χj::Unitful.Energy{T}
     # Properties of atom, not line, but keeping here for now
-    χ∞::Unitful.Energy{T}  
+    χ∞::Unitful.Energy{T}
     atom_weight::Unitful.Mass{T}
     Z::Int
-    function AtomicLine(χu::Quantity{T}, χl::Quantity{T}, χ∞::Quantity{T}, 
+    function AtomicLine(χu::Quantity{T}, χl::Quantity{T}, χ∞::Quantity{T},
                         gu::Int, gl::Int, f_value::T, atom_weight::Unitful.Mass{T},
                         Z::Int)  where T <: AbstractFloat
         χu = wavenumber_to_energy(χu)
@@ -29,7 +29,7 @@ struct AtomicLine{T <: AbstractFloat}
         χ∞ = wavenumber_to_energy(χ∞)
         # Add conversion from cm^-1 to aJ, if type of χu is L^-1
         @assert χ∞ > χu
-        @assert χu > χl 
+        @assert χu > χl
         @assert gu > 0
         @assert gl > 0
         @assert f_value > 0
@@ -90,20 +90,4 @@ frequency and temperature.
 """
 function blackbody_ν(ν::Unitful.Frequency, temperature::Unitful.Temperature)
     (2h / c_0^2) * (ν^3 / (exp((h / k_B) * (ν / temperature)) - 1))
-end
-
-
-"""
-Compute intensity by trapezoidal integration.
-"""
-function calc_intensity(distance::Array{<:Unitful.Length, 1}, extinction::Array{<:PerLength, 1},
-                        source_function::Array{<:UnitsIntensity_λ, 1})
-    @assert distance[2] > distance[1] "Distance must be monotonically increasing"
-    # Since integration functions don't work with units, 
-    # need to ensure quantities are in compatible units
-    dist = ustrip.(distance .|> u"m")
-    ext = ustrip.(extinction .|> u"m^-1")
-    source = ustrip.(source_function .|> u"kW / (m^2 * nm)")
-    τ = cumul_integrate(dist, ext, TrapezoidalFast())
-    return integrate(τ, source .* exp.(-τ))u"kW / (m^2 * nm)"
 end
