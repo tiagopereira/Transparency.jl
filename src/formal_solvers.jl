@@ -28,7 +28,8 @@ end
         z::Array{<:Unitful.Length, 1},
         α::Array{<:PerLength, 1},
         source_function::Array{<:Unitful.Quantity, 1};
-        to_end=false
+        to_end::Bool=false,
+        initial_condition=:source,
     )
 
 Compute piecewise integration of the radiative transfer equation,
@@ -37,16 +38,16 @@ height `z`, extinction `α` and `source_function`. The optional
 keyword argument `to_end` defines the direction of the integration:
 if `false` (default) will start to integrate intensity from the last
 element to the first, and if `true` will integrate from the first
-element to the last.
-
-Currently, the initial condition for intensity at the start point
-is set to the source function.
+element to the last. `initial_condition` can take two values: `:zero` for
+no radiation, or `:source` (default) to take the source function at the
+starting point.
 """
 function piecewise_1D_nn(
     z::Array{<:Unitful.Length, 1},
     α::Array{<:PerLength, 1},
     source_function::Array{<:Unitful.Quantity, 1};
-    to_end=false
+    to_end::Bool=false,
+    initial_condition=:source
 )
     ndep = length(z)
     if to_end
@@ -59,7 +60,13 @@ function piecewise_1D_nn(
         depth_range = ndep-1:-1:1
     end
     intensity = similar(source_function)
-    intensity[start] = source_function[start]
+    if initial_condition == :source
+        intensity[start] = source_function[start]
+    elseif initial_condition == :zero
+        intensity[start] *= 0
+    else
+        error("NotImplemented initial condition $initial_condition")
+    end
     for i in depth_range
         Δτ = abs(z[i] - z[i-incr]) * (α[i] + α[i-incr]) / 2
         w, _ = _w2(Δτ)
@@ -75,7 +82,8 @@ end
         z::Array{<:Unitful.Length, 1},
         α::Array{<:PerLength, 1},
         source_function::Array{<:Unitful.Quantity, 1};
-        to_end=false
+        to_end::Bool=false,
+        initial_condition=:source,
     )
 
 Compute piecewise integration of the radiative transfer equation,
@@ -84,16 +92,16 @@ height `z`, extinction `α` and `source_function`. The optional
 keyword argument `to_end` defines the direction of the integration:
 if `false` (default) will start to integrate intensity from the last
 element to the first, and if `true` will integrate from the first
-element to the last.
-
-Currently, the initial condition for intensity at the start point
-is set to the source function.
+element to the last. `initial_condition` can take two values: `:zero` for
+no radiation, or `:source` (default) to take the source function at the
+starting point.
 """
 function piecewise_1D_linear(
     z::Array{<:Unitful.Length, 1},
     α::Array{<:PerLength, 1},
     source_function::Array{<:Unitful.Quantity, 1};
-    to_end=false
+    to_end::Bool=false,
+    initial_condition=:source,
 )
     ndep = length(z)
     if to_end
@@ -106,7 +114,13 @@ function piecewise_1D_linear(
         depth_range = ndep-1:-1:1
     end
     intensity = similar(source_function)
-    intensity[start] = source_function[start]
+    if initial_condition == :source
+        intensity[start] = source_function[start]
+    elseif initial_condition == :zero
+        intensity[start] *= 0
+    else
+        error("NotImplemented initial condition $initial_condition")
+    end
     for i in depth_range
         Δτ = abs(z[i] - z[i-incr]) * (α[i] + α[i-incr]) / 2
         ΔS = (source_function[i-incr] - source_function[i]) / Δτ

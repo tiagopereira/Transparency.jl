@@ -262,7 +262,11 @@ end
         @test (calc_intensity_brute_force(z, alpha, S) * 2 ≈
                calc_intensity_brute_force(z, alpha, S*2))
         @test piecewise_1D_linear(z, alpha, S) ≈ S
+        @test piecewise_1D_linear(z, alpha, S;
+                                  initial_condition=:zero)[[1, end]] ≈ [S[1], S[1]*0]
         @test piecewise_1D_nn(z, alpha, S) ≈ S
+        @test piecewise_1D_nn(z, alpha, S;
+                              initial_condition=:zero)[[1, end]] ≈ [S[1], S[1]*0]
         # Linear extinction and source function, test reversibility
         alpha = collect(LinRange(1e-3, 1e-5, 20)u"m^-1")
         S = collect(LinRange(1, 100, 20)u"kW / (nm * m^2)")
@@ -270,5 +274,8 @@ end
                reverse(piecewise_1D_linear(z, alpha, S)))
         @test (piecewise_1D_nn(z, reverse(alpha), reverse(S); to_end=true) ≈
                reverse(piecewise_1D_nn(z, alpha, S)))
+        # Exceptions
+        @test_throws ErrorException piecewise_1D_linear(z, alpha, S; initial_condition=:aaa)
+        @test_throws ErrorException piecewise_1D_nn(z, alpha, S; initial_condition=:aaa)
     end
 end
