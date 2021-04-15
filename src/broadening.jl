@@ -19,7 +19,7 @@ const abund_He = 10^10.99 / 10^12  # From RH
     ) where T <: AbstractFloat
 
 Calculate linear Stark broadening according to the approximation of
-[Sutton (1978)](https://ui.adsabs.harvard.edu/abs/1978JQSRT..20..333S/), eq (17),
+[Sutton (1978)](https://ui.adsabs.harvard.edu/abs/1978JQSRT..20..333S/), eq (24),
 so that it can be added into a Voigt profile and avoid the computation of a Holtsmark
 profile. Valid up to electron densities of 1e19 m^-3 in the chromosphere.
 
@@ -40,8 +40,11 @@ function γ_linear_stark(
     else
         a1 = convert(T, 1)
     end
+    γβ = convert(T, 0.425)
     power = convert(T, 2/3)
-    return a1 * convert(T, 6e-5)u"m^2/s" * (n_upper^2 - n_lower^2) * electron_density^power
+    zcoeff = convert(T, 6e-5)u"m^2/s"
+    # Factor of 2 to convert from half half-width to half-width
+    return 2 * γβ * a1 * zcoeff * (n_upper^2 - n_lower^2) * electron_density^power
 end
 
 

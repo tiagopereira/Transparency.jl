@@ -133,8 +133,8 @@ end
     end
     @testset "Linear Stark" begin
         # Test against Sutton formula
-        @test γ_linear_stark.([0., 1.]u"m^-3", 3, 1) ≈ [0, 0.00048]u"s^-1"
-        tmp = 0.0001926u"s^-1"
+        @test γ_linear_stark.([0., 1.]u"m^-3", 3, 1) ≈ [0, 0.000408]u"s^-1"
+        tmp = 0.00016371u"s^-1"
         @test γ_linear_stark.([1, 1e20]u"m^-3", 3, 2) ≈ [tmp, tmp * (1e20)^(2/3)]
         @test_throws AssertionError γ_linear_stark(1.0u"m^-3", 1, 1)
         @test_throws AssertionError γ_linear_stark(1.0u"m^-3", 1, 0)
