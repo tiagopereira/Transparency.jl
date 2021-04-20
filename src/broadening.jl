@@ -42,9 +42,10 @@ function γ_linear_stark(
     end
     γβ = convert(T, 0.425)
     power = convert(T, 2/3)
-    zcoeff = convert(T, 6e-5)u"m^2/s"
+    zcoeff = convert(T, 6e-5)u"s^-1"  # should be m^2/s, dropping m to allow ne=ustrip(...)
+    ne = ustrip(electron_density |> u"m^-3")
     # Factor of 2 to convert from half half-width to half-width
-    return 2 * γβ * a1 * zcoeff * (n_upper^2 - n_lower^2) * electron_density^power
+    return 2 * γβ * a1 * zcoeff * (n_upper^2 - n_lower^2) * ne^power
 end
 
 
