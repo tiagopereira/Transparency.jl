@@ -32,6 +32,10 @@ end
     end
     @testset "hminus_bf" begin
         # Values from the table, ensuring no stimulated emission
+        λ = [18, 121, 164, 500, 850, 1600]u"nm"  # three values from each table
+        @test all(Transparency.hminus_bf_wbr.(λ, 0u"K", 1u"m^-3") ≈
+            [6.7e-24, 5.43e-22, 7.29e-22, 2.923e-21, 4.001e-21, 1.302e-22]u"m^-1")
+        @test Transparency.hminus_bf_wbr(0u"nm", 0u"K", 1u"m^-3") == 0u"m^-1"
         λ = [500, 8000, 16000]u"Å"
         @test all(Transparency.hminus_bf_geltman.(λ, 0u"K", 1u"m^-3") ≈ [1.5e-22,
             3.92e-21, 1.7e-22]u"m^-1")

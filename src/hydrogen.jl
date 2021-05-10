@@ -65,6 +65,11 @@ Compute bound-free extinction from H minus ion. Recipe can be one of:
 - `john`: Follows
   [John (1988)](https://ui.adsabs.harvard.edu/abs/1988A%26A...193..189J/abstract),
   which is valid beyond 9113 nm but may not be good below 364.5 nm.
+
+- `wbr`: Follows
+  [Wishart (1979)](https://ui.adsabs.harvard.edu/abs/1979MNRAS.187P..59W) for λ > 175 nm,
+  and [Broad and Reinhardt (1976)](https://ui.adsabs.harvard.edu/abs/1976PhRvA..14.2159B)
+  for λ <= 164 nm.
 """
 function hminus_bf(
     λ::Unitful.Length,
@@ -77,6 +82,8 @@ function hminus_bf(
         hminus_bf_geltman(λ, temperature, h_neutral_density, electron_density)
     elseif recipe == "john"
         hminus_bf_john(λ, temperature, h_neutral_density, electron_density)
+    elseif recipe == "wbr"
+        hminus_bf_wbr(λ, temperature, h_neutral_density, electron_density)
     else
         throw("NotImplemented recipe $recipe")
     end
@@ -264,8 +271,6 @@ const geltman_bf_σ = [0.00, 0.15, 0.33, 0.57, 0.85, 1.17, 1.52, 1.89, 2.23,
                       1.83, 1.46, 1.06, 0.71, 0.40, 0.17, 0.0]  # in 1e-21 m^2
 
 const geltman_bf_interp = LinearInterpolation(geltman_bf_λ, geltman_bf_σ, extrapolation_bc=0)
-# About 30% faster:
-#hminus_bf_interp2 = LinearInterpolation(0:50:1600, hminus_bf_σ[1:end-1], extrapolation_bc=Line())
 
 """
     hminus_bf_geltman(
@@ -417,6 +422,65 @@ function hminus_bf_john(
     return κ * h_neutral_density * electron_density * k_B * temperature
 end
 
+
+#=----------------------------------------------------------------------------
+        Recipes from Wishart (1979) and Broad and Reinhardt (1976)
+----------------------------------------------------------------------------=#
+const wbr_λ = [     18, 19.6, 21.4, 23.6, 26.4, 29.8, 34.3, 40.4, 49.1, 62.6,  121, 139,
+                   164,  175,  200,  225,  250,  275,  300,  325,  350,  375,  400, 425,
+                   450,  475,  500,  525,  550,  575,  600,  625,  650,  675,  700, 725,
+                   750,  775,  800,  825,  850,  875,  900,  925,  950,  975, 1000, 1025,
+                  1050, 1075, 1100, 1125, 1150, 1175, 1200, 1225, 1250, 1275, 1300, 1325,
+                  1350, 1375, 1400, 1425, 1450, 1475, 1500, 1525, 1550, 1575, 1600, 1610,
+                  1620, 1630]   # in nm
+const wbr_σ = [0.067, 0.088, 0.117, 0.155, 0.206, 0.283, 0.414, 0.703,  1.24,  2.33,
+                5.43,  5.91,  7.29, 7.918, 9.453, 11.08, 12.75, 14.46, 16.19, 17.92,
+               19.65, 21.35, 23.02, 24.65, 26.24, 27.77, 29.23, 30.62, 31.94, 33.17,
+               34.32, 35.37, 36.32, 37.17, 37.91, 38.54, 39.07, 39.48, 39.77, 39.95,
+               40.01, 39.95, 39.77, 39.48, 39.06, 38.53, 37.89, 37.13, 36.25, 35.28,
+               34.19, 33.01, 31.72, 30.34, 28.87, 27.33, 25.71, 24.02, 22.26, 20.46,
+               18.62, 16.74, 14.85, 12.95, 11.07, 9.211, 7.407, 5.677, 4.052, 2.575,
+               1.302, 0.8697, 0.4974, 0.1989]  # in 1e-22 m^2
+const wbr_bf_interp = LinearInterpolation(wbr_λ, wbr_σ, extrapolation_bc=0)
+
+"""
+    hminus_bf_wbr(
+        λ::Unitful.Length,
+        temperature::Unitful.Temperature,
+        h_minus_density::NumberDensity
+    )
+    hminus_bf_wbr(
+        λ::Unitful.Length,
+        temperature::Unitful.Temperature,
+        h_neutral_density::NumberDensity,
+        electron_density::NumberDensity
+    )
+
+Compute extinction from H minus ion, from input H minus populations. Uses recipe from
+[Wishart (1979)](https://ui.adsabs.harvard.edu/abs/1979MNRAS.187P..59W) for λ down to 175 nm,
+and recipe from [Broad and Reinhardt (1976)](https://ui.adsabs.harvard.edu/abs/1976PhRvA..14.2159B)
+for λ=164 nm and below, following the recommendation from Mathisen (1984, MSC thesis).
+"""
+function hminus_bf_wbr(
+    λ::Unitful.Length,
+    temperature::Unitful.Temperature,
+    h_minus_density::NumberDensity
+)
+    λi = ustrip(λ |> u"nm")   # convert to units of table
+    κ = wbr_bf_interp(λi)::Float64 * 1e-22u"m^2"
+    stimulated_emission = exp(-hc_k / (λ * temperature))
+    return h_minus_density * (1 - stimulated_emission) * κ
+end
+
+function hminus_bf_wbr(
+    λ::Unitful.Length,
+    temperature::Unitful.Temperature,
+    h_neutral_density::NumberDensity,
+    electron_density::NumberDensity
+)
+    h_minus_density = calc_hminus_density(h_neutral_density, temperature, electron_density)
+    return hminus_bf_wbr(λ, temperature, h_minus_density)
+end
 
 #=----------------------------------------------------------------------------
                             Recipes from Mihalas
