@@ -153,7 +153,7 @@ end
 """
     function const_unsold(line::AtomicLine; H_scaling::Real=1, He_scaling::Real=1)
 
-Compute height-independent constant for γ_unsold, to be used in function `γ_unsold`.
+Compute atmosphere-independent constant for γ_unsold, to be used in function `γ_unsold`.
 Based on expressions from RH broad.c, which uses formula in Mihalas (1978),
 pp 282, 286-287, eq. (9-50) for v_rel, table 9-1 and eq. (9-76) for the interaction
 coefficient C6.  Input is an `AtomicLine`, which contains the necessary energies and
@@ -173,20 +173,118 @@ end
 
 """
     function γ_unsold(unsold_const::AbstractFloat, temperature::Unitful.Temperature,
-                      h_ground_pop::NumberDensity)
+                      h_neutral_density::NumberDensity)
 
 Compute van der Waals broadening in Lindholm theory using Unsöld's approximation
 for the interaction coefficient \$C_6\$. Based on Mihalas (1978), pp 282, 286-287.
 Takes the atmosphere-indepenent `unsold_const` from `γ_unsold_const`, temperature,
-and ground-level populations of neutral hydrogen, and returns broadening in units of s^-1.
+and populations of neutral hydrogen, and returns broadening in units of s^-1.
 """
 function γ_unsold(
     unsold_const::AbstractFloat,
     temperature::Unitful.Temperature,
-    h_ground_pop::NumberDensity
+    h_neutral_density::NumberDensity
 )
     return (unsold_const * ustrip(temperature |> u"K")^0.3 *
-            ustrip(h_ground_pop |> u"m^-3") * u"s^-1")
+            ustrip(h_neutral_density |> u"m^-3") * u"s^-1")
+end
+
+
+"""
+    function const_barklem(atomic_weight::Unitful.Mass, α::Real, σ::Real)
+
+Compute the atmosphere-independent constant used to calculate broadening from collisions
+with neutral hydrogen using the recipes of Barklem/O'Mara/Anstee, in the function
+`γ_barklem`. The calculation performed here follows eq (3) of
+[Anstee & O'Mara (1995)](https://ui.adsabs.harvard.edu/abs/1995MNRAS.276..859A).
+
+# Arguments
+- `atomic_weight::Unitful.Mass`: atomic weight of element
+- `α::Real`: velocity exponent from Barklem/O'Mara/Anstee tables
+- `σ::Real`: line broadening cross section in atomic units (a_0^2) for a collision
+   velocity of 10 km/s, from Barklem/O'Mara/Anstee tables.
+
+# Returns
+- `Unitful.VolumeFlow`: line broadening width per neutral hydrogen atom. Needs
+   to be multiplied by temperature ^ (1 - α/2) to give proper temperature dependence.
+"""
+function const_barklem(atomic_weight::Unitful.Mass, α::Real, σ::Real)
+    α < 0 && error("α must be non-negative")
+    σ < 0 && error("σ must be non-negative")
+    μ = m_u / (1 / Ar_H + 1 / (atomic_weight / m_u))
+    # Using 1 K to keep units right for later multiplication by correct temperature
+    v_bar = sqrt(8 * k_B * u"K"/ (π * μ)) |> u"m/s"
+    v_ratio = (1e4u"m/s" / v_bar) |> u"m/m"
+    # Squared Bohr radius is to convert from atomic units to m^2, factor of 2 from HW to FW
+    return (a_0^2 * 2 * (4 / π)^(α / 2) * gamma((4 - α) / 2) * v_bar * σ *
+            v_ratio^α) |> u"m^3 / s"
+end
+
+
+"""
+    function γ_barklem(
+        α::AbstractFloat,
+        barklem_const::Unitful.VolumeFlow,
+        temperature::Unitful.Temperature,
+        h_neutral_density::NumberDensity,
+    )
+
+Compute van der Waals broadening from collisions with neutral hydrogen atoms following the
+theory from Barklem/O'Mara/Anstee.
+
+# Arguments
+- `α::AbstractFloat`: velocity exponent from Barklem/O'Mara/Anstee tables
+- `barklem_const::Unitful.VolumeFlow`: atmosphere-independent constant computed from
+   `const_barklem()`.
+- `temperature::Unitful.Temperature`
+- `h_neutral_density::NumberDensity`: number density of neutral hydrogen atoms
+
+# Returns
+- `γ::Unitful.Frequency`: broadening in units of s^-1.
+
+# Notes
+This computes broadening only from hydrogen atoms. For collisions with helium atoms,
+it is recommended to add van der Waals broadening using Unsöld's approximation (see example).
+
+# Examples
+Example for Ca II 854.2 nm line:
+```
+julia> Ca8542 = AtomicLine(25414.400u"cm^-1", 13710.880u"cm^-1", 95785.470u"cm^-1",
+4, 6, 7.242e-02, 40.08 * m_u, 20);
+
+julia> temp = 6000u"K";
+
+julia> h_density = 1e23u"m^-3";
+
+julia> bconst = const_barklem(Ca8542.atom_weight, 0.275, 291)
+7.495208174533257e-16 m³ s⁻¹
+
+julia> γ = γ_barklem(0.275, bconst, temp, h_density)
+1.3596876505340942e11 s⁻¹
+```
+
+Now adding van der Waals broadening for helium as well:
+```
+julia> uconst = const_unsold(Ca8542; H_scaling=0, He_scaling=1)
+2.482484115415461e-16
+
+julia> γ = γ_barklem(0.275, bconst, temp, h_density) + γ_unsold(uconst, temp, h_density)
+1.3630631018876224e11 s⁻¹
+```
+
+# References
+- [Anstee & O'Mara (1995)](https://ui.adsabs.harvard.edu/abs/1995MNRAS.276..859A)
+- [Barklem & O'Omara (1997)](https://ui.adsabs.harvard.edu/abs/1997MNRAS.290..102B)
+- [Barklem, O'Mara & Ross (1998)](https://ui.adsabs.harvard.edu/abs/1998MNRAS.296.1057B)
+- [Barklem & O'Mara (1998)](https://ui.adsabs.harvard.edu/abs/1998MNRAS.300..863B)
+"""
+function γ_barklem(
+    α::AbstractFloat,
+    barklem_const::Unitful.VolumeFlow,
+    temperature::Unitful.Temperature,
+    h_neutral_density::NumberDensity,
+)
+    return barklem_const * ustrip(temperature |> u"K")^(1 - α/2) * h_neutral_density
 end
 
 

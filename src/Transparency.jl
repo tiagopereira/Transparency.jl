@@ -8,6 +8,7 @@ module Transparency
     export humlicek, voigt_profile, dispersion_profile
     export calc_Aji, calc_Bji, damping, doppler_width
     export const_unsold, γ_unsold, γ_linear_stark
+    export const_barklem, γ_barklem
     export const_quadratic_stark, γ_quadratic_stark, γ_quadratic_stark_gray
     export AtomicLine, αline_λ, jline_λ, blackbody_λ, blackbody_ν
     export piecewise_1D_nn, piecewise_1D_linear, calc_intensity_brute_force
@@ -17,7 +18,7 @@ module Transparency
 
     using Unitful
     using Interpolations
-    import SpecialFunctions: expint
+    import SpecialFunctions: expint, gamma
     import NumericalIntegration: integrate, cumul_integrate, TrapezoidalFast
     import PhysicalConstants.CODATA2018: h, k_B, R_∞, c_0, m_e, m_u, e, ε_0, a_0
 

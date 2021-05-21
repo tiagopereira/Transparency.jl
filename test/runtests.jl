@@ -3,7 +3,7 @@ using SpecialFunctions: erfcx
 using Test
 using Transparency
 using Unitful
-import PhysicalConstants.CODATA2018: h, k_B, R_∞, c_0, m_e, e, ε_0
+import PhysicalConstants.CODATA2018: h, k_B, R_∞, c_0, m_e, e, ε_0, m_u
 
 @testset "Thomson" begin
     @test thomson(1.e29u"m^-3") ≈ 6.652458732173518u"m^-1"
@@ -129,11 +129,17 @@ end
 
 @testset "Broadening" begin
     line = AtomicLine(1.1u"aJ", 1.0u"aJ", 1.5u"aJ", 18, 8, 1.0, 1.0u"kg", 1)
-    @testset "van der Walls" begin
+    @testset "van der Waals" begin
         # Testing against implementation
         @test const_unsold(line) ≈ 1.1131993895644783e-15 rtol=1e-15
         @test γ_unsold.(1.0, 1u"K", [1, 2]u"m^-3") ≈ [1, 2]u"s^-1"
         @test γ_unsold(1.0, 1000u"K", 1u"m^-3") ≈ (1000^0.3)u"s^-1"
+        @test const_barklem(m_u * 1, 0.3, 300) ≈ 1.0853795252714703e-15u"m^3 / s"
+        @test const_barklem(m_u * 1, 1, 2) == 2 * const_barklem(m_u * 1, 1, 1)
+        @test_throws ErrorException const_barklem(m_u * 1, 1, -1)
+        @test_throws ErrorException const_barklem(m_u * 1, -1, 1)
+        @test γ_barklem(0.3, 123u"m^3/s", 1u"K", 1u"m^-3") == 123.0u"s^-1"
+        @test γ_barklem(0.3, 1e-16u"m^3/s", 6000u"K", 1e23u"m^-3") ≈ 1.62715364284e10u"s^-1"
     end
     @testset "Linear Stark" begin
         # Test against Sutton formula
