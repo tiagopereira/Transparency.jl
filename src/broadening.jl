@@ -288,6 +288,75 @@ function γ_barklem(
 end
 
 
+"""
+    function const_deridder_rensbergen(
+        atomic_mass_pert::Unitful.Mass,
+        atomic_mass_rad::Unitful.Mass
+        α::Real,
+        β::Real
+    )
+
+Compute the atmosphere-independent constant used to calculate broadening using
+the recipes of [Deridder & Rensbergen (1976)](https://ui.adsabs.harvard.edu/abs/1976A%26AS...23..147D),
+in the function `γ_deridder_rensbergen`.
+
+# Arguments
+- `atomic_weight_pert::Unitful.Mass`: atomic mass of perturbing element (hydrogen or helium)
+- `atomic_weight_rad::Unitful.Mass`: atomic mass of line-producing species
+- `α::Real`: α parameter as taken from the tables of Deridder & Rensbergen (1976),
+   in units of 10^-8 cm^3/s (ignoring the dimensions of the temperature exponent)
+- `β::Real`: β parameter as taken from the tables of Deridder & Rensbergen (1976),
+   dimensionless.
+
+# Returns
+- `Unitful.VolumeFlow`: line broadening width per perturber atom. Needs
+   to be multiplied by temperature ^ β to give proper temperature dependence.
+"""
+function const_deridder_rensbergen(
+    atomic_mass_pert::Unitful.Mass,
+    atomic_mass_rad::Unitful.Mass,
+    α::Real,
+    β::Real,
+)
+    α < 0 && error("α must be non-negative")
+    α = (α * 1e-8u"cm^3/s") |> u"m^3/s"  # Convert from paper's 1e-8 units to SI
+    mass_corr = (1 + atomic_mass_pert / atomic_mass_rad) ^ β
+    return α * mass_corr
+end
+
+
+"""
+    function γ_deridder_rensbergen(
+        β::Real,
+        deridder_const::Unitful.VolumeFlow,
+        temperature::Unitful.Temperature,
+        h_neutral_density::NumberDensity,
+    )
+
+Compute van der Waals broadening from collisions with neutral hydrogen or helium
+atoms following [Deridder & Rensbergen (1976)](https://ui.adsabs.harvard.edu/abs/1976A%26AS...23..147D).
+
+# Arguments
+- `β::Real`: β parameter as taken from the tables of Deridder & Rensbergen (1976),
+   dimensionless.
+- `deridder_const::Unitful.VolumeFlow`: atmosphere-independent constant computed from
+   `const_deridder_rensbergen()`.
+- `temperature::Unitful.Temperature`
+- `perturber_density::NumberDensity`: number density of perturber atoms, either
+   neutral hydrogen or helium.
+
+# Returns
+- `γ::Unitful.Frequency`: broadening in units of s^-1.
+"""
+function γ_deridder_rensbergen(
+    β::Real,
+    deridder_const::Unitful.VolumeFlow,
+    temperature::Unitful.Temperature,
+    perturber_density::NumberDensity,
+)
+    return deridder_const * ustrip(temperature |> u"K")^β * perturber_density
+end
+
 #=----------------------------------------------------------------------------
                     Radiation utilities
 ----------------------------------------------------------------------------=#

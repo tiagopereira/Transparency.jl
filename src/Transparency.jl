@@ -9,6 +9,7 @@ module Transparency
     export calc_Aji, calc_Bji, damping, doppler_width
     export const_unsold, γ_unsold, γ_linear_stark
     export const_barklem, γ_barklem
+    export const_deridder_rensbergen, γ_deridder_rensbergen
     export const_quadratic_stark, γ_quadratic_stark, γ_quadratic_stark_gray
     export AtomicLine, αline_λ, jline_λ, blackbody_λ, blackbody_ν
     export piecewise_1D_nn, piecewise_1D_linear, calc_intensity_brute_force
