@@ -206,7 +206,7 @@ with neutral hydrogen using the recipes of Barklem/O'Mara/Anstee, in the functio
 
 # Returns
 - `Unitful.VolumeFlow`: line broadening width per neutral hydrogen atom. Needs
-   to be multiplied by temperature ^ (1 - α/2) to give proper temperature dependence.
+   to be multiplied by temperature ^ ((1 - α)/2) to give proper temperature dependence.
 """
 function const_barklem(atomic_weight::Unitful.Mass, α::Real, σ::Real)
     α < 0 && error("α must be non-negative")
@@ -284,7 +284,7 @@ function γ_barklem(
     temperature::Unitful.Temperature,
     h_neutral_density::NumberDensity,
 )
-    return barklem_const * ustrip(temperature |> u"K")^(1 - α/2) * h_neutral_density
+    return barklem_const * ustrip(temperature |> u"K")^((1 - α)/2) * h_neutral_density
 end
 
 

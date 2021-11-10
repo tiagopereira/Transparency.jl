@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.4'
+          - '1.6'
           - '1' 
           - 'nightly'
         os:
@@ -26,9 +26,9 @@ jobs:
           - x64
           #- x86 # Exclude for now all 32-bit versions (γ_unsold_const and calc_Bji not working)
         exclude:
-          # Test 1.4 only on Linux
-          - {os: 'windows-latest', version: '1.4'}
-          - {os: 'macOS-latest', version: '1.4'}
+          # Test 1.6 only on Linux
+          - {os: 'windows-latest', version: '1.6'}
+          - {os: 'macOS-latest', version: '1.6'}
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
