@@ -131,7 +131,7 @@ end
     line = AtomicLine(1.1u"aJ", 1.0u"aJ", 1.5u"aJ", 18, 8, 1.0, 1.0u"kg", 1)
     @testset "van der Waals" begin
         # Testing against implementation
-        @test const_unsold(line) ≈ 1.1131993895644783e-15 rtol=1e-15
+        @test const_unsold(line) ≈ 1.1131993895644783e-15 rtol=1e-10
         @test γ_unsold.(1.0, 1u"K", [1, 2]u"m^-3") ≈ [1, 2]u"s^-1"
         @test γ_unsold(1.0, 1000u"K", 1u"m^-3") ≈ (1000^0.3)u"s^-1"
         @test const_barklem(m_u * 1, 0.3, 300) ≈ 1.0853795252714703e-15u"m^3 / s"
