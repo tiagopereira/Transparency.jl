@@ -293,4 +293,16 @@ end
         @test_throws ErrorException piecewise_1D_linear(z, alpha, S; initial_condition=:aaa)
         @test_throws ErrorException piecewise_1D_nn(z, alpha, S; initial_condition=:aaa)
     end
+    @testset "Feautrier" begin
+        z = collect(LinRange(2e6, -1e5, 20))u"m"
+        alpha = 1e-5 * ones(20)u"m^-1"
+        S = zeros(20)u"kW / (nm * m^2)"
+        # Simple tests
+        @test feautrier(z, alpha, S) ≈ S
+        S = 100 * ones(20)u"kW / (nm * m^2)"
+        # Against implementation
+        @test feautrier(z, alpha, S)[1] * 2 ≈ 106.65292755967045u"kW / (nm * m^2)"
+        # Test reversibility
+        @test feautrier(z, alpha, S)[1] ≈ feautrier(z, reverse(alpha), reverse(S))[end]
+    end
 end

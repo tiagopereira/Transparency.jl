@@ -148,3 +148,64 @@ function _w2(Δτ::T) where T <: AbstractFloat
     end
     return w1, w2
 end
+
+
+"""
+    function feautrier(
+        z::Array{<:Unitful.Length{T}, 1},
+        α::Array{<:PerLength{T}, 1},
+        source_function::Array{<:Unitful.Quantity, 1}
+    ) where T <: AbstractFloat
+
+Calculate solution to radiative transfer equation using the Feautrier method.
+Uses algorithm from [Rybicki & Hummer, 1991, A&A 245](https://ui.adsabs.harvard.edu/abs/1991A&A...245..171R).
+Returns the height-dependent Feautrier variable `P`:
+
+```math
+P \\equiv 1/2 (I^+ + I^-)
+```
+
+Currently operates under the following assumptions:
+* The first index of the variables is the top of the atmosphere
+* The boundary conditions are zero radiation at the top and source function at the bottom
+
+Therefore, the emergent intensity is `2 * P[1]`, since ``I^-[1]=0``.
+
+Not properly tested, use with care!
+"""
+function feautrier(
+    z::Array{<:Unitful.Length{T}, 1},
+    α::Array{<:PerLength{T}, 1},
+    source_function::Array{<:Unitful.Quantity, 1}
+) where T <: AbstractFloat
+    ndep = length(z)
+    F = Array{T}(undef, ndep)
+    Z = similar(source_function)
+    P = similar(source_function)
+    Δτ = Array{T}(undef, ndep)
+    Δτ[end] = zero(T)
+    for i in 1:ndep-1
+        Δτ[i] = (z[i] - z[i+1]) * (α[i] + α[i+1]) / 2
+    end
+    H1 = one(T) + 2 / Δτ[1]
+    C1 = 2 / Δτ[1]^2
+    Hn = one(T) + 2 / Δτ[end - 1]
+    An = 2 / Δτ[end - 1]^2
+    # Start elimination
+    F[1] = H1 / C1
+    Z[1] = source_function[1] / (H1 + C1)
+    for i in 2:ndep-1
+        Δτ_mid = (Δτ[i] + Δτ[i - 1]) / 2
+        A = 1 / (Δτ_mid * Δτ[i - 1])
+        C = 1 / (Δτ_mid * Δτ[i])
+        F[i] = (one(T) + A * F[i - 1] / (one(T) + F[i - 1])) / C
+        Z[i] = (source_function[i] + A * Z[i - 1]) / (C * (one(T) + F[i]))
+    end
+    # Now backsubstitution
+    P[end] = (source_function[end] + An * Z[end - 1]) /
+        (Hn + An * (F[end - 1] / (one(T) + F[end - 1])))
+    for i in ndep-1:-1:1
+        P[i] = P[i + 1] / (one(T) + F[i]) + Z[i]
+    end
+    return P
+end

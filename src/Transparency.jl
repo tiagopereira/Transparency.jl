@@ -12,7 +12,7 @@ module Transparency
     export const_deridder_rensbergen, γ_deridder_rensbergen
     export const_quadratic_stark, γ_quadratic_stark, γ_quadratic_stark_gray
     export AtomicLine, αline_λ, jline_λ, blackbody_λ, blackbody_ν
-    export piecewise_1D_nn, piecewise_1D_linear, calc_intensity_brute_force
+    export piecewise_1D_nn, piecewise_1D_linear, calc_intensity_brute_force, feautrier
     export coll_CE, coll_CI, coll_Ω
     export coll_deexc_hydrogen_PB04, coll_exc_hydrogen_johnson, coll_ion_hydrogen_johnson
     export CE_RH_hydrogen, CI_RH_hydrogen
