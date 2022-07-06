@@ -155,13 +155,13 @@ end
 """
     gaunt_bf(charge::Int, n_eff::Number, λ::Unitful.Length)::Float64
 
-Compute bound-free Gaunt factor for a given charge, effective principal
+Compute bound-free Gaunt factor for a given nuclear charge Z, effective principal
 quantum number and wavelength λ. Taken from RH. Formula from
 [Seaton (1960), Rep. Prog. Phys. 23, 313](https://ui.adsabs.harvard.edu/abs/1960RPPh...23..313S/abstract),
 page 316.
 """
-function gaunt_bf(λ::Unitful.Length, charge::Real, n_eff::Real)::Float64
-    x = ustrip(1 / (λ * R_∞ * charge^2) |> u"m/m")
+function gaunt_bf(λ::Unitful.Length, Z::Real, n_eff::Real)::Float64
+    x = ustrip(1 / (λ * R_∞ * Z^2) |> u"m/m")
     x3 = x^(1/3)
     nsqx = 1 / (n_eff^2 * x)
     g_bf = 1 + 0.1728 * x3 * (1 - 2 * nsqx) - 0.0496 * x3^2 * (1 - (1 - nsqx) * 0.66666667 * nsqx)
@@ -169,8 +169,8 @@ function gaunt_bf(λ::Unitful.Length, charge::Real, n_eff::Real)::Float64
     return g_bf
 end
 
-function gaunt_bf(ν::Unitful.Frequency, charge::Real, n_eff::Real)::Float64
-    return gaunt_bf(c_0 / ν, charge, n_eff)
+function gaunt_bf(ν::Unitful.Frequency, Z::Real, n_eff::Real)::Float64
+    return gaunt_bf(c_0 / ν, Z, n_eff)
 end
 
 
@@ -178,9 +178,9 @@ end
     n_eff(energy_upper::Unitful.Energy, energy_lower::Unitful.Energy, Z::Integer)
 
 Compute the effective principal quantum number for a given energy difference
-and atomic number `Z`.
+and nuclear charge Z.
 """
-function n_eff(energy_upper::Unitful.Energy, energy_lower::Unitful.Energy, Z::Integer)
+function n_eff(energy_upper::Unitful.Energy, energy_lower::Unitful.Energy, Z::Real)
     return Z * sqrt(Ryh / (energy_upper - energy_lower))
 end
 
@@ -486,6 +486,30 @@ end
                             Recipes from Mihalas
 ----------------------------------------------------------------------------=#
 """
+    hydrogenic_ff_σ(
+        ν::Unitful.Frequency,
+        charge::Real
+    )
+
+Compute free-free cross section (units m^5) for a hydrogen-like species.
+Following Mihalas (1978) p. 101 and
+[Rutten's IART](https://www.uio.no/studier/emner/matnat/astro/AST4310/h20/pensumliste/iart.pdf)
+p 69. For linear extinction, needs to be multiplied by electron density
+and species density. Does not account for stimulated emission.
+
+Will not work in single-precision.
+"""
+function hydrogenic_ff_σ(
+    ν::Unitful.Frequency,
+    temperature::Unitful.Temperature,
+    charge::Real
+)
+    ν = ν |> u"s^-1"
+    return (αff_const * charge^2 / sqrt(temperature) * ν^-3 *
+            gaunt_ff(ν, temperature, charge))
+end
+
+"""
     hydrogenic_ff(
         ν::Unitful.Frequency,
         temperature::Unitful.Temperature,
@@ -494,22 +518,20 @@ end
         charge::Int
     )
 
-Compute free-free extinction for a hydrogen-like species. Following
-Mihalas (1978) p. 101 and
-[Rutten's IART](https://www.uio.no/studier/emner/matnat/astro/AST4310/h20/pensumliste/iart.pdf)
-p 68. For the hydrogen case, `ion_density` is the proton density (H II).
+Compute free-free linear extinction using hydrogenic_ff_σ. Accounts for
+stimulated emission. For the hydrogen case, `ion_density` is the proton density (H II).
 """
 function hydrogenic_ff(
     ν::Unitful.Frequency,
     temperature::Unitful.Temperature,
     electron_density::NumberDensity,
     species_density::NumberDensity,
-    charge::Int
+    charge::Real
 )
     ν = ν |> u"s^-1"
     stimulated_emission = exp(-h_k * ν / temperature)
-    return (αff_const * charge^2 / sqrt(temperature) * ν^-3 * electron_density *
-       species_density * (1 - stimulated_emission) * gaunt_ff(ν, temperature, charge))
+    α = hydrogenic_ff_σ(ν, temperature, charge) * electron_density * species_density
+    return α * (1 - stimulated_emission)
 end
 
 """
@@ -543,6 +565,54 @@ function hydrogenic_bf(
         return (αbf_const * charge^4 * ν3_ratio * species_density * n_eff *
                 (1 - stimulated_emission) * gaunt_bf(ν, charge, n_eff))
     end
+end
+
+
+"""
+    hydrogenic_bf_σ_scaled(
+        σ0::Unitful.Area,
+        ν::Unitful.Frequency,
+        ν_edge::Unitful.Frequency,
+        charge::Real,
+        n_eff::AbstractFloat
+    )
+
+    hydrogenic_bf_σ_scaled(
+        σ0::Unitful.Area,
+        λ::Unitful.Length,
+        λ_edge::Unitful.Length,
+        charge::Real,
+        n_eff::AbstractFloat
+)
+
+Compute bound-free cross section for a hydrogen-like species by scaling
+a peak cross section σ0 with frequency and the appropriate Gaunt factor.
+No stimulated emission is added.
+"""
+function hydrogenic_bf_σ_scaled(
+    σ0::Unitful.Area,
+    ν::Unitful.Frequency,
+    ν_edge::Unitful.Frequency,
+    charge::Real,
+    n_eff::AbstractFloat
+)
+    if ν < ν_edge
+        σ = 0 * σ0
+    else
+        σ = σ0 * (ν_edge / ν)^3 * (
+            gaunt_bf(ν, charge, n_eff) / gaunt_bf(ν_edge, charge, n_eff))
+    end
+    return σ
+end
+
+function hydrogenic_bf_σ_scaled(
+    σ0::Unitful.Area,
+    λ::Unitful.Length,
+    λ_edge::Unitful.Length,
+    charge::Real,
+    n_eff::AbstractFloat
+)
+    return hydrogenic_bf_σ_scaled(σ0, c_0 / λ, c_0 / λ_edge, charge, n_eff)
 end
 
 

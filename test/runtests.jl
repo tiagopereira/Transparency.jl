@@ -71,9 +71,16 @@ end
         # Only testing against implementation (no table, only expression)
         @test all(hydrogenic_ff.(ν, 5000u"K", 1e24u"m^-3", 1e24u"m^-3", 1) ≈ [
             134.2760926064222, 2.662541955122332, 2.0317078183858428e-8]u"m^-1")
+        @test all(hydrogenic_ff_σ.(ν, 5000u"K", 1) ≈ [
+            1.759801422878951e-46, 2.6709661157204164e-48, 2.0317078183858426e-56]u"m^5")
         @test all(hydrogenic_bf.(ν, ν / 1.1, 5000u"K", 1e22u"m^-3", 1., 2.) ≈ [
             2.4903105889694794, 9.569685175346825, 9.154320813938323]u"m^-1")
         @test hydrogenic_bf(ν[1], ν[1] * 1.1, 1u"K", 1u"m^-3", 1, 2.) == 0u"m^-1"
+        @test hydrogenic_bf(ν[1], ν[1] * 1.1, 1u"K", 1u"m^-3", 1, 2.) == 0u"m^-1"
+        @test hydrogenic_bf_σ_scaled(1u"m^2", ν[3], ν[3] * 1.1, 1., 1.) == 0u"m^2"
+        @test hydrogenic_bf_σ_scaled(42u"m^2", ν[3], ν[3], 1., 1.) == 42u"m^2"
+        @test hydrogenic_bf_σ_scaled(1u"m^2", c_0 / ν[3], c_0 /ν[3], 2., 5.) ≈
+                 hydrogenic_bf_σ_scaled(1u"m^2", ν[3], ν[3], 2., 5.)
     end
     @testset "h2minus" begin
         # Test a few points from the table

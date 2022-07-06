@@ -2,7 +2,8 @@
 Set of recipes to compute opacities.
 """
 module Transparency
-    export hminus_ff, hminus_bf, hydrogenic_ff, hydrogenic_bf
+    export hminus_ff, hminus_bf
+    export hydrogenic_ff, hydrogenic_ff_σ, hydrogenic_bf, hydrogenic_bf_σ_scaled
     export h2minus_ff, h2plus_ff, h2plus_bf
     export rayleigh_h2, rayleigh_h, thomson
     export humlicek, voigt_profile, dispersion_profile
