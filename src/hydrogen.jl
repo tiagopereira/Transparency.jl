@@ -617,7 +617,7 @@ function α_hminus_bf_wbr(
     λi = ustrip(λ |> u"nm")   # convert to units of table
     κ = wbr_bf_interp(λi)::Float64 * 1e-22u"m^2"
     stimulated_emission = exp(-hc_k / (λ * temperature))
-    return κ * h_minus_density
+    return κ * h_minus_density * (1 - stimulated_emission)
 end
 
 function α_hminus_bf_wbr(
