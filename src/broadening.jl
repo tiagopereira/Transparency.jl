@@ -53,23 +53,28 @@ end
                     Quadratic Stark broadening: C_4 / r^4
 ----------------------------------------------------------------------------=#
 """
-    c4_traving(line::AtomicLine)
+    c4_traving(χup, χlo, χ∞, Z)
 
 Calculate the \$C_4\$ interaction constant (quadratic Stark effect) using the
 recipe of Traving (1960), "Uber die Theorie der Druckverbreiterung von Spektrallinien",
 p 93.
+
+# Arguments
+- χup, χlo, χ∞: energies of upper, lower, and ionisation
+- Z: effective nuclear charge of the ionised level
 """
-function c4_traving(line::AtomicLine)
-    n_eff_u = n_eff(line.χ∞, line.χj, line.Z)
-    n_eff_l = n_eff(line.χ∞, line.χi, line.Z)
-    C4 = (e^2 * inv_4πε0 * a_0^3 * 2 * π / (h * 18 * line.Z^4) *
+function c4_traving(χup, χlo, χ∞, Z)
+    n_eff_u = n_eff(χ∞, χup, Z)
+    n_eff_l = n_eff(χ∞, χlo, Z)
+    C4 = (e^2 * inv_4πε0 * a_0^3 * 2 * π / (h * 18 * Z^4) *
         ((n_eff_u * (5 * n_eff_u^2 + 1))^2 - (n_eff_l * (5 * n_eff_l^2 + 1))^2))
     return C4 |> u"m^4 / s"
 end
 
 
 """
-    const_quadratic_stark(line::AtomicLine;
+    const_quadratic_stark(atomic_mass::Unitful.Mass, χup::Unitful.Energy,
+                          χlo::Unitful.Energy, χ∞::Unitful.Energy, Z::Real;
                           mean_atomic_weight::Unitful.Mass=28 * m_u,
                           scaling::Real=1)
 
@@ -84,15 +89,25 @@ Using the estimate for \$C_4\$ from Traving (1960), "Uber die Theorie der
 Druckverbreiterung von Spektrallinien", p 93., and \$n_{ion}\\approx n_e\$
 (following Gray).
 """
+function const_quadratic_stark(atomic_mass::Unitful.Mass, χup::Unitful.Energy,
+                               χlo::Unitful.Energy, χ∞::Unitful.Energy, Z::Real;
+                               mean_atomic_weight::Unitful.Mass=28 * m_u,
+                               scaling::Real=1)
+    C = ustrip(8 * k_B / (π * atomic_mass) |> u"J/(K * kg)")
+    Cm = ((1 + atomic_mass / m_e)^(1/6) +
+          (1 + atomic_mass / mean_atomic_weight)^(1/6))
+    C4 = ustrip(c4_traving(χup, χlo, χ∞, Z) |> u"m^4 / s")
+    cStark23 = 11.37u"m^3 / s" * (scaling * C4)^(2/3)
+    return C^(1/6) * cStark23 * Cm
+end
+
+# Deprecated
 function const_quadratic_stark(line::AtomicLine;
                                mean_atomic_weight::Unitful.Mass=28 * m_u,
                                scaling::Real=1)
-    C = ustrip(8 * k_B / (π * line.atom_weight) |> u"J/(K * kg)")
-    Cm = ((1 + line.atom_weight / m_e)^(1/6) +
-          (1 + line.atom_weight / mean_atomic_weight)^(1/6))
-    C4 = ustrip(c4_traving(line) |> u"m^4 / s")
-    cStark23 = 11.37u"m^3 / s" * (scaling * C4)^(2/3)
-    return C^(1/6) * cStark23 * Cm
+    @warn "Calling const_quadratic_stark with AtomicLine is deprecated"
+    const_quadratic_stark(line.atom_weight, line.χj, line.χi, line.χ∞, line.Z;
+                          mean_atomic_weight, scaling)
 end
 
 
@@ -151,23 +166,34 @@ end
                  van der Waals broadening, C_6 / r^6
 ----------------------------------------------------------------------------=#
 """
-    function const_unsold(line::AtomicLine; H_scaling::Real=1, He_scaling::Real=1)
+    function const_unsold(atom_mass::Unitful.Mass, χup::Unitful.Energy, χlo::Unitful.Energy,
+                          χ∞::Unitful.Energy, Z::Real; H_scaling=1, He_scaling=1)
 
 Compute atmosphere-independent constant for γ_unsold, to be used in function `γ_unsold`.
 Based on expressions from RH broad.c, which uses formula in Mihalas (1978),
 pp 282, 286-287, eq. (9-50) for v_rel, table 9-1 and eq. (9-76) for the interaction
-coefficient C6.  Input is an `AtomicLine`, which contains the necessary energies and
-element weight. The van der Waals broadening can be scaled for both H and He perturbers
+coefficient C6. Arguments are line parameters, where Z is the nuclear charge of the
+upper level plus one (e.g. 1 for neutral, 2 for singly ionised).
+
+The van der Waals broadening can be scaled for both H and He perturbers
 using `H_scaling` and `He_scaling`.
 """
-function const_unsold(line::AtomicLine; H_scaling::Real=1, He_scaling::Real=1)
-    Δr = (Ry^2 * (1 / (line.χ∞ - line.χj)^2 - 1 / (line.χ∞ - line.χi)^2)) |> u"J/J"
+function const_unsold(atomic_mass::Unitful.Mass, χup::Unitful.Energy, χlo::Unitful.Energy,
+                      χ∞::Unitful.Energy, Z::Real; H_scaling=1, He_scaling=1)
+    Δr = (Ry^2 * (1 / (χ∞ - χup)^2 - 1 / (χ∞ - χlo)^2)) |> u"J/J"
     C6 = ustrip((2.5 * e^2 * αp * inv_4πε0^2 * 2 * π *
-                 (line.Z * a_0)^2 / h * Δr) |> u"C^2 * m^6 / (F * J * s)")
-    v_rel_const = ustrip(8 * k_B / (π * line.atom_weight) |> u"J/(K * kg)")
-    v_rel_H = v_rel_const * (1 + line.atom_weight / mass_H)
-    v_rel_He = v_rel_const * (1 + line.atom_weight / mass_He)
+                 (Z * a_0)^2 / h * Δr) |> u"C^2 * m^6 / (F * J * s)")
+    v_rel_const = ustrip(8 * k_B / (π * atomic_mass) |> u"J/(K * kg)")
+    v_rel_H = v_rel_const * (1 + atomic_mass / mass_H)
+    v_rel_He = v_rel_const * (1 + atomic_mass / mass_He)
     return 8.08 * (H_scaling * v_rel_H^0.3 + He_scaling * abund_He * v_rel_He^0.3) * C6^0.4
+end
+
+# For compatibility, now deprecated.
+function const_unsold(line::AtomicLine; H_scaling::Real=1, He_scaling::Real=1)
+    @warn "Calling const_unsold with AtomicLine is deprecated and will be removed soon"
+    const_unsold(line.atom_weight, line.χj, line.χi, line.χ∞, line.Z;
+                 H_scaling= H_scaling, He_scaling=He_scaling)
 end
 
 
@@ -208,10 +234,10 @@ with neutral hydrogen using the recipes of Barklem/O'Mara/Anstee, in the functio
 - `Unitful.VolumeFlow`: line broadening width per neutral hydrogen atom. Needs
    to be multiplied by temperature ^ ((1 - α)/2) to give proper temperature dependence.
 """
-function const_barklem(atomic_weight::Unitful.Mass, α::Real, σ::Real)
+function const_barklem(atomic_mass::Unitful.Mass, α::Real, σ::Real)
     α < 0 && error("α must be non-negative")
     σ < 0 && error("σ must be non-negative")
-    μ = m_u / (1 / Ar_H + 1 / (atomic_weight / m_u))
+    μ = m_u / (1 / Ar_H + 1 / (atomic_mass / m_u))
     # Using 1 K to keep units right for later multiplication by correct temperature
     v_bar = sqrt(8 * k_B * u"K"/ (π * μ)) |> u"m/s"
     v_ratio = (1e4u"m/s" / v_bar) |> u"m/m"
@@ -364,7 +390,7 @@ end
     function calc_Aji(λ0::Unitful.Length, g_ratio::Real, f_value::AbstractFloat)
 
 Compute the spontaneous deexcitation rate \$A_{ul}\$ (natural broadening)
-for a bound-bound transition, using the SI expression:
+for a bound-bound transition, using the SI expression *per wavelength*:
 
 \$\$
 A_{ul} = \\frac{2\\pi e^2}{\\varepsilon_0 m_e c} \\frac{g_l}{g_u} \\frac{f_{lu}}{\\lambda^2}

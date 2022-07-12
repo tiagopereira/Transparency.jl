@@ -6,10 +6,10 @@ using Unitful
 import PhysicalConstants.CODATA2018: h, k_B, R_∞, c_0, m_e, e, ε_0, m_u
 
 @testset "Thomson" begin
-    @test thomson(1.e29u"m^-3") ≈ 6.652458732173518u"m^-1"
-    @test thomson(0u"m^-3") == 0.0u"m^-1"
-    @test_throws MethodError thomson(1)
-    @test_throws MethodError thomson(1u"m")
+    @test α_thomson(1.e29u"m^-3") ≈ 6.652458732173518u"m^-1"
+    @test α_thomson(0u"m^-3") == 0.0u"m^-1"
+    @test_throws MethodError α_thomson(1)
+    @test_throws MethodError α_thomson(1u"m")
 end
 
 @testset "Hydrogen" begin
@@ -18,41 +18,41 @@ end
         temp = 5040u"K" ./ θ
         λ = [91130, 11390, 3038]u"Å"
         # Testing against values in the original table
-        @test all(Transparency.hminus_ff_stilley.(
+        @test all(Transparency.α_hminus_ff_stilley.(
             λ, temp, 1u"m^-3", 1u"Pa" ./ (k_B .* temp)) ≈ [2.75e-28, 8.76e-30, 1.45e-30]u"m^-1")
         # Only testing against implementation (no table, only coefficients)
-        @test all(Transparency.hminus_ff_john.(
+        @test all(Transparency.α_hminus_ff_john.(
             λ, temp, 1u"m^-3", 1u"Pa" ./ (k_B .* temp)) ≈ [2.7053123415611454e-28,
                 8.7520478601176e-30, 1.6977098265784962e-30]u"m^-1")
-        @test hminus_ff.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="stilley") ≈
-            Transparency.hminus_ff_stilley.(λ, temp, 1u"m^-3", 1u"m^-3")
-        @test hminus_ff.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="john") ≈
-            Transparency.hminus_ff_john.(λ, temp, 1u"m^-3", 1u"m^-3")
-        @test_throws "ErrorException" hminus_ff.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="aaa")
+        @test α_hminus_ff.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="stilley") ≈
+            Transparency.α_hminus_ff_stilley.(λ, temp, 1u"m^-3", 1u"m^-3")
+        @test α_hminus_ff.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="john") ≈
+            Transparency.α_hminus_ff_john.(λ, temp, 1u"m^-3", 1u"m^-3")
+        @test_throws "ErrorException" α_hminus_ff.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="aaa")
     end
     @testset "hminus_bf" begin
         # Values from the table, ensuring no stimulated emission
         λ = [18, 121, 164, 500, 850, 1600]u"nm"  # three values from each table
-        @test all(Transparency.hminus_bf_wbr.(λ, 0u"K", 1u"m^-3") ≈
+        @test all(Transparency.α_hminus_bf_wbr.(λ, 0u"K", 1u"m^-3") ≈
             [6.7e-24, 5.43e-22, 7.29e-22, 2.923e-21, 4.001e-21, 1.302e-22]u"m^-1")
-        @test Transparency.hminus_bf_wbr(0u"nm", 0u"K", 1u"m^-3") == 0u"m^-1"
+        @test Transparency.α_hminus_bf_wbr(0u"nm", 0u"K", 1u"m^-3") == 0u"m^-1"
         λ = [500, 8000, 16000]u"Å"
-        @test all(Transparency.hminus_bf_geltman.(λ, 0u"K", 1u"m^-3") ≈ [1.5e-22,
+        @test all(Transparency.α_hminus_bf_geltman.(λ, 0u"K", 1u"m^-3") ≈ [1.5e-22,
             3.92e-21, 1.7e-22]u"m^-1")
-        @test Transparency.hminus_bf_geltman(0u"nm", 0u"K", 1u"m^-3") == 0u"m^-1"
+        @test Transparency.α_hminus_bf_geltman(0u"nm", 0u"K", 1u"m^-3") == 0u"m^-1"
         # Only testing against implementation (no table, only coefficients)
-        @test all(Transparency.hminus_bf_geltman.(λ, 5000u"K", 1e24u"m^-3", 1e25u"m^-3") ≈ [
+        @test all(Transparency.α_hminus_bf_geltman.(λ, 5000u"K", 1e24u"m^-3", 1e25u"m^-3") ≈ [
             2.5276368595110785, 64.24516492134173, 2.3904062765360763]u"m^-1")
-        @test all(Transparency.hminus_bf_john.(λ, 5000u"K", 1e24u"m^-3", 1e25u"m^-3") ≈ [
+        @test all(Transparency.α_hminus_bf_john.(λ, 5000u"K", 1e24u"m^-3", 1e25u"m^-3") ≈ [
             2.5257481813577, 65.22804371400161, 1.8270928643449478]u"m^-1")
         temp = [2000, 5000, 10000]u"K"
         @test Transparency.calc_hminus_density.(1e13u"m^-3", temp, 1e14u"m^-3") ≈
             [91.94566524525405, 1.6850912396740527, 0.24835857088939245]u"m^-3"
-        @test hminus_bf.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="geltman") ≈
-            Transparency.hminus_bf_geltman.(λ, temp, 1u"m^-3", 1u"m^-3")
-        @test hminus_bf.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="john") ≈
-            Transparency.hminus_bf_john.(λ, temp, 1u"m^-3", 1u"m^-3")
-        @test_throws "ErrorException" hminus_bf.(λ, temp, 1u"m^-3", 1u"m^-3", recipe="aaa")
+        @test α_hminus_bf.(λ, temp, 1u"m^-3", 1u"m^-3"; recipe="geltman") ≈
+            Transparency.α_hminus_bf_geltman.(λ, temp, 1u"m^-3", 1u"m^-3")
+        @test α_hminus_bf.(λ, temp, 1u"m^-3", 1u"m^-3"; recipe="john") ≈
+            Transparency.α_hminus_bf_john.(λ, temp, 1u"m^-3", 1u"m^-3")
+        @test_throws "ErrorException" α_hminus_bf.(λ, temp, 1u"m^-3", 1u"m^-3"; recipe="aaa")
     end
     @testset "hydrogenic" begin
         t1 = (3.28805e15u"Hz" * h / k_B) |> u"K"
@@ -69,45 +69,47 @@ end
         @test_throws AssertionError Transparency.gaunt_bf(500u"nm", 1, 1)
         ν = [0.15, 0.6, 300]u"PHz"
         # Only testing against implementation (no table, only expression)
-        @test all(hydrogenic_ff.(ν, 5000u"K", 1e24u"m^-3", 1e24u"m^-3", 1) ≈ [
+        @test all(α_hydrogenic_ff.(ν, 5000u"K", 1e24u"m^-3", 1e24u"m^-3", 1) ≈ [
             134.2760926064222, 2.662541955122332, 2.0317078183858428e-8]u"m^-1")
-        @test all(hydrogenic_ff_σ.(ν, 5000u"K", 1) ≈ [
-            1.759801422878951e-46, 2.6709661157204164e-48, 2.0317078183858426e-56]u"m^5")
-        @test all(hydrogenic_bf.(ν, ν / 1.1, 5000u"K", 1e22u"m^-3", 1., 2.) ≈ [
+        @test all(σ_hydrogenic_ff.(ν, 5000u"K", 1) ≈ [
+            1.342760926064222e-46, 2.6625419551223324e-48, 2.0317078183858426e-56]u"m^5")
+        @test all(α_hydrogenic_bf.(ν, ν / 1.1, 5000u"K", 1e22u"m^-3", 1., 2.) ≈ [
             2.4903105889694794, 9.569685175346825, 9.154320813938323]u"m^-1")
-        @test hydrogenic_bf(ν[1], ν[1] * 1.1, 1u"K", 1u"m^-3", 1, 2.) == 0u"m^-1"
-        @test hydrogenic_bf(ν[1], ν[1] * 1.1, 1u"K", 1u"m^-3", 1, 2.) == 0u"m^-1"
-        @test hydrogenic_bf_σ_scaled(1u"m^2", ν[3], ν[3] * 1.1, 1., 1.) == 0u"m^2"
-        @test hydrogenic_bf_σ_scaled(42u"m^2", ν[3], ν[3], 1., 1.) == 42u"m^2"
-        @test hydrogenic_bf_σ_scaled(1u"m^2", c_0 / ν[3], c_0 /ν[3], 2., 5.) ≈
-                 hydrogenic_bf_σ_scaled(1u"m^2", ν[3], ν[3], 2., 5.)
+        @test α_hydrogenic_bf(ν[1], ν[1] * 1.1, 1u"K", 1u"m^-3", 1, 2.) == 0u"m^-1"
+        @test α_hydrogenic_bf(ν[1], ν[1] * 1.1, 1u"K", 1u"m^-3", 1, 2.) == 0u"m^-1"
+        @test σ_hydrogenic_bf_scaled(1u"m^2", ν[3], ν[3] * 1.1, 1., 1.) == 0u"m^2"
+        @test σ_hydrogenic_bf_scaled(42u"m^2", ν[3], ν[3], 1., 1.) == 42u"m^2"
+        @test σ_hydrogenic_bf_scaled(1u"m^2", c_0 / ν[3], c_0 /ν[3], 2., 5.) ≈
+                 σ_hydrogenic_bf_scaled(1u"m^2", ν[3], ν[3], 2., 5.)
     end
     @testset "h2minus" begin
         # Test a few points from the table
         λ = [350.5, 1139.1, 15_188.3]u"nm"
         temp = 5040u"K" ./ [0.5, 1.6, 3.6]
-        @test all(h2minus_ff.(λ, temp, 1e31u"m^-3", 1u"Pa" ./ (k_B .* temp)) ≈ [
+        @test all(α_h2minus_ff.(λ, temp, 1e31u"m^-3", 1u"Pa" ./ (k_B .* temp)) ≈ [
             4.17, 80.60, 14700]u"m^-1")
     end
     @testset "h2plus" begin
         λ = 1f7u"nm" ./ [500, 4000, 26_000]
         temp = [12_000, 5000, 2500]u"K"
         # Test opacity table directly, sum of bf and ff
-        κ_total = h2plus_ff.(λ, temp, 1f25u"m^-3", 1f24u"m^-3") .+
-                  h2plus_bf.(λ, temp, 1f25u"m^-3", 1f24u"m^-3")
+        κ_total = α_h2plus_ff.(λ, temp, 1f25u"m^-3", 1f24u"m^-3") .+
+                  α_h2plus_bf.(λ, temp, 1f25u"m^-3", 1f24u"m^-3")
+        κ_total = convert.(typeof(1f0u"m^-1"), κ_total)  # convert to Float32
         @test all(κ_total ≈ [0.226, 1.35, 114.]u"m^-1")
         # Test bf fraction table
-        @test all(h2plus_bf.(λ, temp, 1f25u"m^-3", 1f24u"m^-3") ./
+        κ_tmp = α_h2plus_bf.(λ, temp, 1f25u"m^-3", 1f24u"m^-3")
+        @test all(convert.(typeof(1f0u"m^-1"), κ_tmp) ./
                         κ_total ≈ [0.006, 0.273, 0.996])
     end
     @testset "rayleigh" begin
         # Testing against implementation
-        @test rayleigh_h2(100u"nm", 1u"m^-3") == 0.0u"m^-1"
+        @test α_rayleigh_h2(100u"nm", 1u"m^-3") == 0.0u"m^-1"
         λ = [200, 600, 2000]u"nm"
-        @test all(rayleigh_h2.(λ, 1e30u"m^-3") ≈ [
+        @test all(α_rayleigh_h2.(λ, 1e30u"m^-3") ≈ [
             8.565893085787453, 0.0747454429941088, 0.0005507634570312499]u"m^-1")
-        @test rayleigh_h(100u"nm", 1u"m^-3") == 0.0u"m^-1"
-        @test all(rayleigh_h.(λ, 1e30u"m^-3") ≈ [
+        @test α_rayleigh_h(100u"nm", 1u"m^-3") == 0.0u"m^-1"
+        @test all(α_rayleigh_h.(λ, 1e30u"m^-3") ≈ [
             6.946808203124999, 0.04804975738502133, 0.00036536185226953123]u"m^-1")
     end
 end
@@ -163,7 +165,8 @@ end
     end
     @testset "Quadratic Stark" begin
         # Testing against implementation
-        @test Transparency.c4_traving(line) ≈ 3.744741607310466e-23u"m^4 / s"
+        @test Transparency.c4_traving(line.χj, line.χi, line.χ∞, line.Z) ≈
+            3.744741607310466e-23u"m^4 / s"
         @test const_quadratic_stark(line) ≈ 2.7236711602117037e-13u"m^3 / s"
         @test const_quadratic_stark(line; scaling=2) ≈ const_quadratic_stark(line) * 2^(2/3)
         @test γ_quadratic_stark(1.2345u"m^-3", 0u"K") ≈ 1.2345u"s^-1"

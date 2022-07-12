@@ -20,6 +20,8 @@ struct AtomicLine{T <: AbstractFloat}
     # Properties of atom, not line, but keeping here for now
     χ∞::Unitful.Energy{T}
     atom_weight::Unitful.Mass{T}
+    # Z was used incorrectly before. It should be the effective nuclear charge of
+    # the upper level plus one. E.g. 1 for neutral, 2 for singly ionised.
     Z::Int
     function AtomicLine(χu::Quantity{T}, χl::Quantity{T}, χ∞::Quantity{T},
                         gu::Int, gl::Int, f_value::T, atom_weight::Unitful.Mass{T},
