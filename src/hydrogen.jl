@@ -306,7 +306,7 @@ page 255, which is valid for λ up to 9113 nm.
 function σ_hminus_ff_stilley(λ::Unitful.Length, temperature::Unitful.Temperature)
     λi = ustrip(λ |> u"nm")   # convert to units of table
     temp = ustrip(temperature |> u"K")
-    kappa = stilley_ff_interp(λi, temp)::Float64 * 1e-29u"m^4/N"
+    kappa = max(0.0, stilley_ff_interp(λi, temp)::Float64) * 1e-29u"m^4/N"
     return  k_B * temperature * kappa |> u"m^5"
 end
 
@@ -472,6 +472,7 @@ function σ_hminus_ff_john(λ::Unitful.Length, temperature::Unitful.Temperature)
                               λinv * (table[i, 3] + λinv * (table[i, 4] +
                               λinv * (table[i, 5] + λinv * table[i, 6]))))
     end
+    κ = max(0.0, κ)  # ensure no extrapolation to negative values
     return κ * 1e-32u"m^4/N" * k_B * temperature |> u"m^5"
 end
 
