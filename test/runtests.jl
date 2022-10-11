@@ -143,10 +143,14 @@ end
 end
 
 @testset "Broadening" begin
-    line = AtomicLine(1.1u"aJ", 1.0u"aJ", 1.5u"aJ", 18, 8, 1.0, 1.0u"kg", 1)
+    χup = 1.1u"aJ"
+    χlo = 1.0u"aJ"
+    χ∞ = 1.5u"aJ"
+    Z = 1
+    mass = 1.0u"kg"
     @testset "van der Waals" begin
         # Testing against implementation
-        @test const_unsold(line) ≈ 1.1131993895644783e-15 rtol=1e-10
+        @test const_unsold(mass, χup, χlo, χ∞, Z) ≈ 1.1131993895644783e-15 rtol=1e-10
         @test γ_unsold.(1.0, 1u"K", [1, 2]u"m^-3") ≈ [1, 2]u"s^-1"
         @test γ_unsold(1.0, 1000u"K", 1u"m^-3") ≈ (1000^0.3)u"s^-1"
         @test const_barklem(m_u * 1, 0.3, 300) ≈ 1.0853795252714703e-15u"m^3 / s"
@@ -163,23 +167,25 @@ end
     end
     @testset "Linear Stark" begin
         # Test against Sutton formula
-        @test γ_linear_stark.([0., 1.]u"m^-3", 3, 1) ≈ [0, 0.000408]u"s^-1"
+        @test γ_stark_linear.([0., 1.]u"m^-3", 3, 1) ≈ [0, 0.000408]u"s^-1"
         tmp = 0.00016371u"s^-1"
-        @test γ_linear_stark.([1, 1e20]u"m^-3", 3, 2) ≈ [tmp, tmp * (1e20)^(2/3)]
-        @test_throws AssertionError γ_linear_stark(1.0u"m^-3", 1, 1)
-        @test_throws AssertionError γ_linear_stark(1.0u"m^-3", 1, 0)
+        @test γ_stark_linear.([1, 1e20]u"m^-3", 3, 2) ≈ [tmp, tmp * (1e20)^(2/3)]
+        @test_throws AssertionError γ_stark_linear(1.0u"m^-3", 1, 1)
+        @test_throws AssertionError γ_stark_linear(1.0u"m^-3", 1, 0)
     end
     @testset "Quadratic Stark" begin
         # Testing against implementation
-        @test Transparency.c4_traving(line.χj, line.χi, line.χ∞, line.Z) ≈
+        @test Transparency.c4_traving(χup, χlo, χ∞, Z) ≈
             3.744741607310466e-23u"m^4 / s"
-        @test const_quadratic_stark(line) ≈ 2.7236711602117037e-13u"m^3 / s"
-        @test const_quadratic_stark(line; scaling=2) ≈ const_quadratic_stark(line) * 2^(2/3)
-        @test γ_quadratic_stark(1.2345u"m^-3", 0u"K") ≈ 1.2345u"s^-1"
-        @test γ_quadratic_stark(1e10u"m^-3", 10000u"K") ≈ 1e10u"s^-1" * 10000^(1/6)
+        @test const_stark_quadratic(mass, χup, χlo, χ∞, Z) ≈
+            2.7236711602117037e-13u"m^3 / s"
+        @test const_stark_quadratic(mass, χup, χlo, χ∞, Z; scaling=2) ≈
+            const_stark_quadratic(mass, χup, χlo, χ∞, Z) * 2^(2/3)
+        @test γ_stark_quadratic(1.2345u"m^-3", 0u"K") ≈ 1.2345u"s^-1"
+        @test γ_stark_quadratic(1e10u"m^-3", 10000u"K") ≈ 1e10u"s^-1" * 10000^(1/6)
         # Testing against implementation
         temp = [5000, 10000]u"K"
-        @test (γ_quadratic_stark_gray.(1e22u"m^-3", temp, 1e-20u"m^4/s") ≈
+        @test (γ_stark_quadratic_gray.(1e22u"m^-3", temp, 1e-20u"m^4/s") ≈
                 [5.709239783376956e11, 6.40840498153864e11]u"s^-1")
     end
     @testset "Radiation quantities" begin
@@ -191,16 +197,6 @@ end
 end
 
 @testset "Line" begin
-    line = AtomicLine(1.39728917u"aJ", 1.0u"aJ", 1.5u"aJ", 1, 1, 1.0, 1.0u"kg", 1)
-    @testset "AtomicLine" begin
-        @test line.λ0 ≈ 500u"nm"
-        @test_throws MethodError AtomicLine(1.1u"aJ", 1u"aJ", 1.5u"aJ", 1, 1, 1.0, 1.0u"kg", 1)
-        @test_throws AssertionError AtomicLine(.0u"aJ", .0u"aJ", .5u"aJ", 1, 1, 1.0, .1u"kg", 1)
-    end
-    @test αline_λ(line, 1u"m^-1", 1u"m^-3", 1u"m^-3") == 0u"m^-1"
-    # Testing against implementation
-    @test αline_λ(line, 1u"nm^-1", 1e17u"m^-3", 1e18u"m^-3") ≈ 1.9918846554254643u"m^-1"
-    @test jline_λ(line, 1u"m^-1", 1e21u"m^-3") ≈ 8.435271743930054u"W / (m^3 * nm)"
     @testset "Blackbody" begin
         λ = 500.0u"nm"
         @test blackbody_λ(λ, 5000u"K") ≈ 12.107190590398108u"kW / (m^2 * nm)"
