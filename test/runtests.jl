@@ -189,9 +189,9 @@ end
                 [5.709239783376956e11, 6.40840498153864e11]u"s^-1")
     end
     @testset "Radiation quantities" begin
-        @test calc_Aji(1u"m", ustrip(ε_0 * m_e * c_0), 1 / ustrip(2π * e^2)) ≈ 1u"s^-1"
-        @test calc_Bji(1u"m", 0u"Hz") ≈ 0u"m^3 / J"
-        @test calc_Bji(1000u"nm", 1e9u"Hz") ≈ 8.396002689872053e-6u"m^3 / J"
+        @test calc_Aul(1u"m", ustrip(ε_0 * m_e * c_0), 1 / ustrip(2π * e^2)) ≈ 1u"s^-1"
+        @test calc_Bul(1u"m", 0u"Hz") ≈ 0u"m^3 / J"
+        @test calc_Bul(1000u"nm", 1e9u"Hz") ≈ 8.396002689872053e-6u"m^3 / J"
         @test damping(1u"Hz", 1u"m", 1u"m") ≈ ustrip(1 / (4π * c_0))
     end
 end

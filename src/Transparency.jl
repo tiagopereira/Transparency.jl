@@ -8,7 +8,7 @@ module Transparency
     export σ_h2minus_ff, σ_h2plus_ff, σ_h2plus_bf, α_h2minus_ff, α_h2plus_ff, α_h2plus_bf
     export σ_rayleigh_h2, σ_rayleigh_h, σ_thomson, α_rayleigh_h2, α_rayleigh_h, α_thomson
     export humlicek, voigt_profile, dispersion_profile
-    export calc_Aji, calc_Bji, damping, doppler_width
+    export calc_Aul, calc_Bul, damping, doppler_width
     export const_unsold, γ_unsold, γ_stark_linear
     export const_barklem, γ_barklem
     export const_deridder_rensbergen, γ_deridder_rensbergen

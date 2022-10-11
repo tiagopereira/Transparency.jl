@@ -3,7 +3,7 @@ Computes line extinction and associated quantities.
 """
 
 """
-    function calc_Aji(λ0::Unitful.Length, g_ratio::Real, f_value::AbstractFloat)
+    function calc_Aul(λ0::Unitful.Length, g_ratio::Real, f_value::AbstractFloat)
 
 Compute the spontaneous deexcitation rate \$A_{ul}\$ (natural broadening)
 for a bound-bound transition, using the SI expression *per wavelength*:
@@ -15,13 +15,13 @@ A_{ul} = \\frac{2\\pi e^2}{\\varepsilon_0 m_e c} \\frac{g_l}{g_u} \\frac{f_{lu}}
 for a given rest wavelength `λ0`, ration between statistical weights of lower and
 upper levels (`g_ratio` = gl / gu), and `f_value` .
 """
-function calc_Aji(λ0::Unitful.Length, g_ratio::Real, f_value::AbstractFloat)
+function calc_Aul(λ0::Unitful.Length, g_ratio::Real, f_value::AbstractFloat)
     (2π * e^2 / (ε_0 * m_e * c_0) * g_ratio * f_value / λ0^2) |> u"s^-1"
 end
 
 
 """
-    function calc_Bji(λ0::Unitful.Length, Aji::Unitful.Frequency)
+    function calc_Bul(λ0::Unitful.Length, Aul::Unitful.Frequency)
 
 Compute the induced deexcitation rate \$B_{ul}\$ for a bound-bound transition,
 using the SI expression *per wavelength*:
@@ -30,9 +30,9 @@ using the SI expression *per wavelength*:
 B_{ul} = \\frac{\\lambda^5}{2 h c} A_{ul}
 \$\$
 
-for a given rest wavelength `λ0`, and spontaneous deexcitation rate `Aji.`
+for a given rest wavelength `λ0`, and spontaneous deexcitation rate `Aul.`
 """
-calc_Bji(λ0::Unitful.Length, Aji::Unitful.Frequency) = (λ0^5 * Aji / (2h * c_0^2)) |> u"m^3 / J"
+calc_Bul(λ0::Unitful.Length, Aul::Unitful.Frequency) = (λ0^5 * Aul / (2h * c_0^2)) |> u"m^3 / J"
 
 
 """
