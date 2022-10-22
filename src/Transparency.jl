@@ -14,7 +14,6 @@ module Transparency
     export const_deridder_rensbergen, γ_deridder_rensbergen
     export const_stark_quadratic, γ_stark_quadratic, γ_stark_quadratic_gray
     export blackbody_λ, blackbody_ν
-    export piecewise_1D_nn, piecewise_1D_linear, calc_intensity_brute_force, feautrier
     export coll_CE, coll_CI, coll_Ω
     export coll_deexc_hydrogen_PB04, coll_exc_hydrogen_johnson, coll_ion_hydrogen_johnson
     export CE_RH_hydrogen, CI_RH_hydrogen
@@ -22,7 +21,6 @@ module Transparency
     using Interpolations
     using StaticArrays
     using Unitful
-    import NumericalIntegration: integrate, cumul_integrate, TrapezoidalFast
     import PhysicalConstants.CODATA2018: h, k_B, R_∞, c_0, m_e, m_u, e, ε_0, a_0
     import SpecialFunctions: expint, gamma
 

@@ -241,8 +241,8 @@ end
         temp = [3000, 5000, 10000]u"K"
         data1 = [1, 1, 1]u"m^3 / (K^(1/2) * s)"
         data2 = [1, 1, 1]
-        interp1 = LinearInterpolation(temp, data1)
-        interp2 = LinearInterpolation(temp, data2)
+        interp1 = linear_interpolation(temp, data1)
+        interp2 = linear_interpolation(temp, data2)
         # Using wrong units of data:
         @test_throws MethodError coll_CE(interp2, 1, 1u"m^-3", 5000u"K")
         @test_throws MethodError coll_CI(interp2, 1u"J", 1u"m^-3", 5000u"K")
@@ -269,52 +269,5 @@ end
                        [7.26, 9.27, 11.4, 11.9], atol=1e-3)
         @test isapprox(ustrip.(coll_deexc_hydrogen_PB04.(4, 5, 1, ne, temp) .* c0),
                        [817, 1350, 3400, 10000], atol=1e-3)
-    end
-end
-
-@testset "Formal solvers" begin
-    @testset "Weights" begin
-        @test all(Transparency._w2(60.) .== (1, 1))
-        @test all(Transparency._w2(1.) .≈ (1-exp(-1), 1 - 2*exp(-1)))
-        @test all(Transparency._w2(1f-6) .≈ (9.999995f-7, 4.9999967f-13))
-    end
-    @testset "Piecewise" begin
-        # Constant source function
-        z = collect(LinRange(1, 1e6, 20))u"m"
-        alpha = ones(20) * 1e-20u"m^-1"
-        S = ones(20)*u"kW / (nm * m^2)"
-        @test piecewise_1D_linear(z, alpha, S) ≈ S
-        @test piecewise_1D_nn(z, alpha, S) ≈ S
-        alpha = ones(20) * 1e-1u"m^-1"
-        @test (calc_intensity_brute_force(z, alpha, S) * 2 ≈
-               calc_intensity_brute_force(z, alpha, S*2))
-        @test piecewise_1D_linear(z, alpha, S) ≈ S
-        @test piecewise_1D_linear(z, alpha, S;
-                                  initial_condition=:zero)[[1, end]] ≈ [S[1], S[1]*0]
-        @test piecewise_1D_nn(z, alpha, S) ≈ S
-        @test piecewise_1D_nn(z, alpha, S;
-                              initial_condition=:zero)[[1, end]] ≈ [S[1], S[1]*0]
-        # Linear extinction and source function, test reversibility
-        alpha = collect(LinRange(1e-3, 1e-5, 20)u"m^-1")
-        S = collect(LinRange(1, 100, 20)u"kW / (nm * m^2)")
-        @test (piecewise_1D_linear(z, reverse(alpha), reverse(S); to_end=true) ≈
-               reverse(piecewise_1D_linear(z, alpha, S)))
-        @test (piecewise_1D_nn(z, reverse(alpha), reverse(S); to_end=true) ≈
-               reverse(piecewise_1D_nn(z, alpha, S)))
-        # Exceptions
-        @test_throws ErrorException piecewise_1D_linear(z, alpha, S; initial_condition=:aaa)
-        @test_throws ErrorException piecewise_1D_nn(z, alpha, S; initial_condition=:aaa)
-    end
-    @testset "Feautrier" begin
-        z = collect(LinRange(2e6, -1e5, 20))u"m"
-        alpha = 1e-5 * ones(20)u"m^-1"
-        S = zeros(20)u"kW / (nm * m^2)"
-        # Simple tests
-        @test feautrier(z, alpha, S) ≈ S
-        S = 100 * ones(20)u"kW / (nm * m^2)"
-        # Against implementation
-        @test feautrier(z, alpha, S)[1] * 2 ≈ 106.65292755967045u"kW / (nm * m^2)"
-        # Test reversibility
-        @test feautrier(z, alpha, S)[1] ≈ feautrier(z, reverse(alpha), reverse(S))[end]
     end
 end

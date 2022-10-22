@@ -2,27 +2,6 @@
 Tools for computing the formal solution of the radiative transfer equation.
 """
 
-
-"""
-Compute intensity by "brute force" trapezoidal integration. Doesn't work well in many
-cases, its use is discouraged.
-"""
-function calc_intensity_brute_force(
-    distance::Array{<:Unitful.Length, 1},
-    extinction::Array{<:PerLength, 1},
-    source_function::Array{<:UnitsIntensity_λ, 1}
-)
-    @assert distance[2] > distance[1] "Distance must be monotonically increasing"
-    # Since integration functions don't work with units,
-    # need to ensure quantities are in compatible units
-    dist = ustrip.(distance .|> u"m")
-    ext = ustrip.(extinction .|> u"m^-1")
-    source = ustrip.(source_function .|> u"kW / (m^2 * nm)")
-    τ = cumul_integrate(dist, ext, TrapezoidalFast())
-    return integrate(τ, source .* exp.(-τ))u"kW / (m^2 * nm)"
-end
-
-
 """
     piecewise_1D_nn(
         z::Array{<:Unitful.Length, 1},
