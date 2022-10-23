@@ -37,7 +37,6 @@ module Transparency
     include("line.jl")
     include("broadening.jl")
     include("collisions.jl")
-    include("formal_solvers.jl")
     include("hydrogen.jl")
     include("thomson.jl")
     include("voigt.jl")
