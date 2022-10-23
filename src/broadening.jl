@@ -12,7 +12,7 @@ const abund_He = 10^10.99 / 10^12  # From RH
                     Linear Stark broadening: C_2 / r^2
 ----------------------------------------------------------------------------=#
 """
-    γ_linear_stark(
+    γ_stark_linear(
         electron_density::NumberDensity{T},
         n_upper::Integer,
         n_lower::Integer
@@ -28,7 +28,7 @@ profile. Valid up to electron densities of 1e19 m^-3 in the chromosphere.
 - `n_upper`: principal quantum number of upper level
 - `n_lower`: principal quantum number of lower level
 """
-function γ_linear_stark(
+function γ_stark_linear(
     electron_density::NumberDensity{T},
     n_upper::Integer,
     n_lower::Integer
@@ -73,7 +73,7 @@ end
 
 
 """
-    const_quadratic_stark(atomic_mass::Unitful.Mass, χup::Unitful.Energy,
+    const_stark_quadratic(atomic_mass::Unitful.Mass, χup::Unitful.Energy,
                           χlo::Unitful.Energy, χ∞::Unitful.Energy, Z::Real;
                           mean_atomic_weight::Unitful.Mass=28 * m_u,
                           scaling::Real=1)
@@ -89,7 +89,7 @@ Using the estimate for \$C_4\$ from Traving (1960), "Uber die Theorie der
 Druckverbreiterung von Spektrallinien", p 93., and \$n_{ion}\\approx n_e\$
 (following Gray).
 """
-function const_quadratic_stark(atomic_mass::Unitful.Mass, χup::Unitful.Energy,
+function const_stark_quadratic(atomic_mass::Unitful.Mass, χup::Unitful.Energy,
                                χlo::Unitful.Energy, χ∞::Unitful.Energy, Z::Real;
                                mean_atomic_weight::Unitful.Mass=28 * m_u,
                                scaling::Real=1)
@@ -101,18 +101,9 @@ function const_quadratic_stark(atomic_mass::Unitful.Mass, χup::Unitful.Energy,
     return C^(1/6) * cStark23 * Cm
 end
 
-# Deprecated
-function const_quadratic_stark(line::AtomicLine;
-                               mean_atomic_weight::Unitful.Mass=28 * m_u,
-                               scaling::Real=1)
-    @warn "Calling const_quadratic_stark with AtomicLine is deprecated"
-    const_quadratic_stark(line.atom_weight, line.χj, line.χi, line.χ∞, line.Z;
-                          mean_atomic_weight, scaling)
-end
-
 
 """
-    γ_quadratic_stark(
+    γ_stark_quadratic(
         electron_density::NumberDensity,
         temperature::Unitful.Temperature;
         stark_constant::Unitful.VolumeFlow=1.0u"m^3 / s",
@@ -121,9 +112,9 @@ end
 Compute quadratic Stark broadening for a given `electron_density`.  If `temperature` is
 nonzero, then it will apply the standard recipe of RH (using \$C_4\$ from Traving 1960).
 The `stark_constant` can be obtained either from atomic data sources, or, if using the RH
-recipe, using the function `const_quadratic_stark`.
+recipe, using the function `const_stark_quadratic`.
 """
-function γ_quadratic_stark(
+function γ_stark_quadratic(
     electron_density::NumberDensity,
     temperature::Unitful.Temperature;
     stark_constant::Unitful.VolumeFlow=1.0u"m^3 / s",
@@ -138,7 +129,7 @@ end
 
 
 """
-    γ_quadratic_stark_gray(
+    γ_stark_quadratic_gray(
         electron_density::NumberDensity,
         temperature::Unitful.Temperature,
         c4::Quantity{<:AbstractFloat, Unitful.𝐋^4 / Unitful.𝐓},
@@ -148,7 +139,7 @@ Compute quadratic Stark broadening using the recipe of Gray (2005), page 244, eq
 The interaction constant `c4` should be provided, either from atomic data or from the
 estimate of Traving (1960) using `c4_traving`.
 """
-function γ_quadratic_stark_gray(
+function γ_stark_quadratic_gray(
     electron_density::NumberDensity,
     temperature::Unitful.Temperature,
     c4::Quantity{<:AbstractFloat, Unitful.𝐋^4 / Unitful.𝐓},
@@ -188,14 +179,6 @@ function const_unsold(atomic_mass::Unitful.Mass, χup::Unitful.Energy, χlo::Uni
     v_rel_He = v_rel_const * (1 + atomic_mass / mass_He)
     return 8.08 * (H_scaling * v_rel_H^0.3 + He_scaling * abund_He * v_rel_He^0.3) * C6^0.4
 end
-
-# For compatibility, now deprecated.
-function const_unsold(line::AtomicLine; H_scaling::Real=1, He_scaling::Real=1)
-    @warn "Calling const_unsold with AtomicLine is deprecated and will be removed soon"
-    const_unsold(line.atom_weight, line.χj, line.χi, line.χ∞, line.Z;
-                 H_scaling= H_scaling, He_scaling=He_scaling)
-end
-
 
 """
     function γ_unsold(unsold_const::AbstractFloat, temperature::Unitful.Temperature,
@@ -384,39 +367,8 @@ function γ_deridder_rensbergen(
 end
 
 #=----------------------------------------------------------------------------
-                    Radiation utilities
+                    Utilities
 ----------------------------------------------------------------------------=#
-"""
-    function calc_Aji(λ0::Unitful.Length, g_ratio::Real, f_value::AbstractFloat)
-
-Compute the spontaneous deexcitation rate \$A_{ul}\$ (natural broadening)
-for a bound-bound transition, using the SI expression *per wavelength*:
-
-\$\$
-A_{ul} = \\frac{2\\pi e^2}{\\varepsilon_0 m_e c} \\frac{g_l}{g_u} \\frac{f_{lu}}{\\lambda^2}
-\$\$
-
-for a given rest wavelength `λ0`, ration between statistical weights of lower and
-upper levels (`g_ratio` = gl / gu), and `f_value` .
-"""
-function calc_Aji(λ0::Unitful.Length, g_ratio::Real, f_value::AbstractFloat)
-    (2π * e^2 / (ε_0 * m_e * c_0) * g_ratio * f_value / λ0^2) |> u"s^-1"
-end
-
-
-"""
-    function calc_Bji(λ0::Unitful.Length, Aji::Unitful.Frequency)
-
-Compute the induced deexcitation rate \$B_{ul}\$ for a bound-bound transition,
-using the SI expression *per wavelength*:
-
-\$\$
-B_{ul} = \\frac{\\lambda^5}{2 h c} A_{ul}
-\$\$
-
-for a given rest wavelength `λ0`, and spontaneous deexcitation rate `Aji.`
-"""
-calc_Bji(λ0::Unitful.Length, Aji::Unitful.Frequency) = (λ0^5 * Aji / (2h * c_0^2)) |> u"m^3 / J"
 
 
 """

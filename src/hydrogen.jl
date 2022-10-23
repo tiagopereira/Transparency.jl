@@ -190,8 +190,8 @@ const saha_const = h^2 / (2 * π * m_e * k_B)  # Constant for Saha equation
 const αff_const = (4 / (3 * h * c_0) * (e^2 / (4 * π * ε_0))^3 *
                    sqrt(2 * π / (3 * m_e^3 * k_B))) |> u"K^(1/2) * m^5 / s^3"
 const αbf_const = (4 * e^2 / (3 * π * sqrt(3) * ε_0 * m_e * c_0^2 * R_∞)) |> u"m^2"
-const kurucz_ff_interp = LinearInterpolation((kurucz_ff_table_y, kurucz_ff_table_x),
-                                             kurucz_ff_table, extrapolation_bc=Line())
+const kurucz_ff_interp = linear_interpolation((kurucz_ff_table_y, kurucz_ff_table_x),
+                                              kurucz_ff_table, extrapolation_bc=Line())
 
 """
     gaunt_ff(ν::Unitful.Frequency, temperature::Unitful.Temperature, charge::Int)
@@ -291,7 +291,7 @@ const stilley_ff_table =
 =#   1.62e+01 1.72e+01 1.82e+01 1.91e+01 2.00e+01 2.09e+01 2.17e+01 2.25e+01];
     [2.75e+01 3.29e+01 3.80e+01 4.28e+01 4.75e+01 5.19e+01 5.62e+01 6.04e+01  #= 9133.0 nm
 =#   6.45e+01 6.84e+01 7.23e+01 7.60e+01 7.97e+01 8.32e+01 8.67e+01 9.01e+01]]
-const stilley_ff_interp = LinearInterpolation((stilley_ff_λ, stilley_ff_t[end:-1:1]),
+const stilley_ff_interp = linear_interpolation((stilley_ff_λ, stilley_ff_t[end:-1:1]),
                              stilley_ff_table[:, end:-1:1], extrapolation_bc=Line())
 
 """
@@ -346,7 +346,7 @@ const geltman_bf_σ = [0.00, 0.15, 0.33, 0.57, 0.85, 1.17, 1.52, 1.89, 2.23,
                       3.93, 3.85, 3.73, 3.58, 3.38, 3.14, 2.85, 2.54, 2.20,
                       1.83, 1.46, 1.06, 0.71, 0.40, 0.17, 0.0]  # in 1e-21 m^2
 
-const geltman_bf_interp = LinearInterpolation(geltman_bf_λ, geltman_bf_σ, extrapolation_bc=0)
+const geltman_bf_interp = linear_interpolation(geltman_bf_λ, geltman_bf_σ, extrapolation_bc=0)
 
 
 """
@@ -570,7 +570,7 @@ const wbr_σ = [0.067, 0.088, 0.117, 0.155, 0.206, 0.283, 0.414, 0.703,  1.24,  
                34.19, 33.01, 31.72, 30.34, 28.87, 27.33, 25.71, 24.02, 22.26, 20.46,
                18.62, 16.74, 14.85, 12.95, 11.07, 9.211, 7.407, 5.677, 4.052, 2.575,
                1.302, 0.8697, 0.4974, 0.1989]  # in 1e-22 m^2
-const wbr_bf_interp = LinearInterpolation(wbr_λ, wbr_σ, extrapolation_bc=0)
+const wbr_bf_interp = linear_interpolation(wbr_λ, wbr_σ, extrapolation_bc=0)
 
 
 """
@@ -635,7 +635,7 @@ end
                             Recipes from Mihalas
 ----------------------------------------------------------------------------=#
 """
-    σ_hydrogenic_ff_σ(
+    σ_hydrogenic_ff(
         ν::Unitful.Frequency,
         charge::Real
     )
@@ -817,7 +817,7 @@ const bell_ff_κ =
      4.03e+01  5.20e+01  5.70e+01  6.08e+01  6.65e+01  7.08e+01  7.76e+01  8.30e+01
      7.16e+01  9.23e+01  1.01e+02  1.08e+02  1.18e+02  1.26e+02  1.38e+02  1.47e+02]
 # Linear extrapolation in λ, flat extrapolation in θ
-const bell_ff_interp = LinearInterpolation((bell_ff_λ, bell_ff_t[end:-1:1]),
+const bell_ff_interp = linear_interpolation((bell_ff_λ, bell_ff_t[end:-1:1]),
                    bell_ff_κ[:, end:-1:1], extrapolation_bc=(Line(), Flat()))
 
 """
@@ -919,9 +919,9 @@ const bates_bf_fraction = convert(Array{Float32, 2},
 const bates_ff_fraction = 1 .- bates_bf_fraction
 const bates_ff_κ = bates_κ .* bates_ff_fraction
 const bates_bf_κ = bates_κ .* bates_bf_fraction
-const bates_ff_interp = LinearInterpolation((bates_λ[end:-1:1], bates_t),
+const bates_ff_interp = linear_interpolation((bates_λ[end:-1:1], bates_t),
                           bates_ff_κ[end:-1:1, :], extrapolation_bc=(Line(), Flat()))
-const bates_bf_interp = LinearInterpolation((bates_λ[end:-1:1], bates_t),
+const bates_bf_interp = linear_interpolation((bates_λ[end:-1:1], bates_t),
                           bates_bf_κ[end:-1:1, :], extrapolation_bc=(Line(), Flat()))
 
 
@@ -997,7 +997,7 @@ const victor_h2_σ = SA[2.35E-28, 1.22E-28, 6.80E-29, 4.24E-29, 2.84E-29, 2.00E-
                        1.25E-29, 1.22E-29, 1.00E-29, 8.70E-30, 4.29E-30, 3.68E-30,
                        2.75E-30, 1.89E-30, 1.36E-30, 8.11E-31, 3.60E-31, 3.48E-31,
                        2.64E-31, 1.04E-31, 5.69E-32]  # in m2
-const victor_h2_interp = LinearInterpolation(victor_h2_λ, victor_h2_σ, extrapolation_bc=Line())
+const victor_h2_interp = linear_interpolation(victor_h2_λ, victor_h2_σ, extrapolation_bc=Line())
 
 """
     function σ_rayleigh_h2(λ::Unitful.Length)
@@ -1039,10 +1039,10 @@ end
                   Recipes from Dalgarno (1962)
 ----------------------------------------------------------------------------=#
 """
-    σ_rayleigh_h(λ::Unitful.Length, h_ground_density::NumberDensity)
+    σ_rayleigh_h(λ::Unitful.Length)
 
-Compute cross section from Rayleigh scattering from H atoms. To obtain extinction,
-multiply by the number density of neutral hydrogen atoms in the ground state.
+Compute cross section from Rayleigh scattering from neutral H atoms. To obtain extinction,
+multiply by the number density of neutral hydrogen atoms.
 Uses recipe from Dalgarno (1962), Geophysics Corp. of America, Technical Report No. 62-28-A
 (unavailable), which is accurate to 1% for λ > 125.0 nm.
 """
@@ -1060,13 +1060,11 @@ end
 
 
 """
-    α_rayleigh_h(λ::Unitful.Length, h_ground_density::NumberDensity)
+    α_rayleigh_h(λ::Unitful.Length, h_neutral_density::NumberDensity)
 
-Compute extinction from Rayleigh scattering from H atoms. `h_ground_density`
-is the number density of neutral hydrogen atoms in the ground state.
-Based on `σ_rayleigh_h`.
+Compute extinction from Rayleigh scattering from neutral H atoms.
 """
-function α_rayleigh_h(λ::Unitful.Length, h_ground_density::NumberDensity)
+function α_rayleigh_h(λ::Unitful.Length, h_neutral_density::NumberDensity)
     σ_h = σ_rayleigh_h(λ)
-    return σ_h * h_ground_density
+    return σ_h * h_neutral_density
 end

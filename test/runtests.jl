@@ -143,10 +143,14 @@ end
 end
 
 @testset "Broadening" begin
-    line = AtomicLine(1.1u"aJ", 1.0u"aJ", 1.5u"aJ", 18, 8, 1.0, 1.0u"kg", 1)
+    χup = 1.1u"aJ"
+    χlo = 1.0u"aJ"
+    χ∞ = 1.5u"aJ"
+    Z = 1
+    mass = 1.0u"kg"
     @testset "van der Waals" begin
         # Testing against implementation
-        @test const_unsold(line) ≈ 1.1131993895644783e-15 rtol=1e-10
+        @test const_unsold(mass, χup, χlo, χ∞, Z) ≈ 1.1131993895644783e-15 rtol=1e-10
         @test γ_unsold.(1.0, 1u"K", [1, 2]u"m^-3") ≈ [1, 2]u"s^-1"
         @test γ_unsold(1.0, 1000u"K", 1u"m^-3") ≈ (1000^0.3)u"s^-1"
         @test const_barklem(m_u * 1, 0.3, 300) ≈ 1.0853795252714703e-15u"m^3 / s"
@@ -163,44 +167,36 @@ end
     end
     @testset "Linear Stark" begin
         # Test against Sutton formula
-        @test γ_linear_stark.([0., 1.]u"m^-3", 3, 1) ≈ [0, 0.000408]u"s^-1"
+        @test γ_stark_linear.([0., 1.]u"m^-3", 3, 1) ≈ [0, 0.000408]u"s^-1"
         tmp = 0.00016371u"s^-1"
-        @test γ_linear_stark.([1, 1e20]u"m^-3", 3, 2) ≈ [tmp, tmp * (1e20)^(2/3)]
-        @test_throws AssertionError γ_linear_stark(1.0u"m^-3", 1, 1)
-        @test_throws AssertionError γ_linear_stark(1.0u"m^-3", 1, 0)
+        @test γ_stark_linear.([1, 1e20]u"m^-3", 3, 2) ≈ [tmp, tmp * (1e20)^(2/3)]
+        @test_throws AssertionError γ_stark_linear(1.0u"m^-3", 1, 1)
+        @test_throws AssertionError γ_stark_linear(1.0u"m^-3", 1, 0)
     end
     @testset "Quadratic Stark" begin
         # Testing against implementation
-        @test Transparency.c4_traving(line.χj, line.χi, line.χ∞, line.Z) ≈
+        @test Transparency.c4_traving(χup, χlo, χ∞, Z) ≈
             3.744741607310466e-23u"m^4 / s"
-        @test const_quadratic_stark(line) ≈ 2.7236711602117037e-13u"m^3 / s"
-        @test const_quadratic_stark(line; scaling=2) ≈ const_quadratic_stark(line) * 2^(2/3)
-        @test γ_quadratic_stark(1.2345u"m^-3", 0u"K") ≈ 1.2345u"s^-1"
-        @test γ_quadratic_stark(1e10u"m^-3", 10000u"K") ≈ 1e10u"s^-1" * 10000^(1/6)
+        @test const_stark_quadratic(mass, χup, χlo, χ∞, Z) ≈
+            2.7236711602117037e-13u"m^3 / s"
+        @test const_stark_quadratic(mass, χup, χlo, χ∞, Z; scaling=2) ≈
+            const_stark_quadratic(mass, χup, χlo, χ∞, Z) * 2^(2/3)
+        @test γ_stark_quadratic(1.2345u"m^-3", 0u"K") ≈ 1.2345u"s^-1"
+        @test γ_stark_quadratic(1e10u"m^-3", 10000u"K") ≈ 1e10u"s^-1" * 10000^(1/6)
         # Testing against implementation
         temp = [5000, 10000]u"K"
-        @test (γ_quadratic_stark_gray.(1e22u"m^-3", temp, 1e-20u"m^4/s") ≈
+        @test (γ_stark_quadratic_gray.(1e22u"m^-3", temp, 1e-20u"m^4/s") ≈
                 [5.709239783376956e11, 6.40840498153864e11]u"s^-1")
     end
     @testset "Radiation quantities" begin
-        @test calc_Aji(1u"m", ustrip(ε_0 * m_e * c_0), 1 / ustrip(2π * e^2)) ≈ 1u"s^-1"
-        @test calc_Bji(1u"m", 0u"Hz") ≈ 0u"m^3 / J"
-        @test calc_Bji(1000u"nm", 1e9u"Hz") ≈ 8.396002689872053e-6u"m^3 / J"
+        @test calc_Aul(1u"m", ustrip(ε_0 * m_e * c_0), 1 / ustrip(2π * e^2)) ≈ 1u"s^-1"
+        @test calc_Bul(1u"m", 0u"Hz") ≈ 0u"m^3 / J"
+        @test calc_Bul(1000u"nm", 1e9u"Hz") ≈ 8.396002689872053e-6u"m^3 / J"
         @test damping(1u"Hz", 1u"m", 1u"m") ≈ ustrip(1 / (4π * c_0))
     end
 end
 
 @testset "Line" begin
-    line = AtomicLine(1.39728917u"aJ", 1.0u"aJ", 1.5u"aJ", 1, 1, 1.0, 1.0u"kg", 1)
-    @testset "AtomicLine" begin
-        @test line.λ0 ≈ 500u"nm"
-        @test_throws MethodError AtomicLine(1.1u"aJ", 1u"aJ", 1.5u"aJ", 1, 1, 1.0, 1.0u"kg", 1)
-        @test_throws AssertionError AtomicLine(.0u"aJ", .0u"aJ", .5u"aJ", 1, 1, 1.0, .1u"kg", 1)
-    end
-    @test αline_λ(line, 1u"m^-1", 1u"m^-3", 1u"m^-3") == 0u"m^-1"
-    # Testing against implementation
-    @test αline_λ(line, 1u"nm^-1", 1e17u"m^-3", 1e18u"m^-3") ≈ 1.9918846554254643u"m^-1"
-    @test jline_λ(line, 1u"m^-1", 1e21u"m^-3") ≈ 8.435271743930054u"W / (m^3 * nm)"
     @testset "Blackbody" begin
         λ = 500.0u"nm"
         @test blackbody_λ(λ, 5000u"K") ≈ 12.107190590398108u"kW / (m^2 * nm)"
@@ -245,8 +241,8 @@ end
         temp = [3000, 5000, 10000]u"K"
         data1 = [1, 1, 1]u"m^3 / (K^(1/2) * s)"
         data2 = [1, 1, 1]
-        interp1 = LinearInterpolation(temp, data1)
-        interp2 = LinearInterpolation(temp, data2)
+        interp1 = linear_interpolation(temp, data1)
+        interp2 = linear_interpolation(temp, data2)
         # Using wrong units of data:
         @test_throws MethodError coll_CE(interp2, 1, 1u"m^-3", 5000u"K")
         @test_throws MethodError coll_CI(interp2, 1u"J", 1u"m^-3", 5000u"K")
@@ -273,52 +269,5 @@ end
                        [7.26, 9.27, 11.4, 11.9], atol=1e-3)
         @test isapprox(ustrip.(coll_deexc_hydrogen_PB04.(4, 5, 1, ne, temp) .* c0),
                        [817, 1350, 3400, 10000], atol=1e-3)
-    end
-end
-
-@testset "Formal solvers" begin
-    @testset "Weights" begin
-        @test all(Transparency._w2(60.) .== (1, 1))
-        @test all(Transparency._w2(1.) .≈ (1-exp(-1), 1 - 2*exp(-1)))
-        @test all(Transparency._w2(1f-6) .≈ (9.999995f-7, 4.9999967f-13))
-    end
-    @testset "Piecewise" begin
-        # Constant source function
-        z = collect(LinRange(1, 1e6, 20))u"m"
-        alpha = ones(20) * 1e-20u"m^-1"
-        S = ones(20)*u"kW / (nm * m^2)"
-        @test piecewise_1D_linear(z, alpha, S) ≈ S
-        @test piecewise_1D_nn(z, alpha, S) ≈ S
-        alpha = ones(20) * 1e-1u"m^-1"
-        @test (calc_intensity_brute_force(z, alpha, S) * 2 ≈
-               calc_intensity_brute_force(z, alpha, S*2))
-        @test piecewise_1D_linear(z, alpha, S) ≈ S
-        @test piecewise_1D_linear(z, alpha, S;
-                                  initial_condition=:zero)[[1, end]] ≈ [S[1], S[1]*0]
-        @test piecewise_1D_nn(z, alpha, S) ≈ S
-        @test piecewise_1D_nn(z, alpha, S;
-                              initial_condition=:zero)[[1, end]] ≈ [S[1], S[1]*0]
-        # Linear extinction and source function, test reversibility
-        alpha = collect(LinRange(1e-3, 1e-5, 20)u"m^-1")
-        S = collect(LinRange(1, 100, 20)u"kW / (nm * m^2)")
-        @test (piecewise_1D_linear(z, reverse(alpha), reverse(S); to_end=true) ≈
-               reverse(piecewise_1D_linear(z, alpha, S)))
-        @test (piecewise_1D_nn(z, reverse(alpha), reverse(S); to_end=true) ≈
-               reverse(piecewise_1D_nn(z, alpha, S)))
-        # Exceptions
-        @test_throws ErrorException piecewise_1D_linear(z, alpha, S; initial_condition=:aaa)
-        @test_throws ErrorException piecewise_1D_nn(z, alpha, S; initial_condition=:aaa)
-    end
-    @testset "Feautrier" begin
-        z = collect(LinRange(2e6, -1e5, 20))u"m"
-        alpha = 1e-5 * ones(20)u"m^-1"
-        S = zeros(20)u"kW / (nm * m^2)"
-        # Simple tests
-        @test feautrier(z, alpha, S) ≈ S
-        S = 100 * ones(20)u"kW / (nm * m^2)"
-        # Against implementation
-        @test feautrier(z, alpha, S)[1] * 2 ≈ 106.65292755967045u"kW / (nm * m^2)"
-        # Test reversibility
-        @test feautrier(z, alpha, S)[1] ≈ feautrier(z, reverse(alpha), reverse(S))[end]
     end
 end
