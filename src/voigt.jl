@@ -41,14 +41,14 @@ end
 
 
 """
-    voigt_profile(a::AbstractFloat, v::AbstractFloat, ΔD::Unitful.Quantity)
+    voigt_profile(a::T, v::AbstractFloat, ΔD::T)::T
 
 Compute the normalised Voigt profile, given a damping constant `a`, dimensionless
 wavelength or frequency `v`, and Doppler width `ΔD` (wavelength or frequency).
 In the case of wavelength, v = (λ - λ0) / ΔD.
 Uses Humlicek's W4 approximation. Returns in inverse units of ΔD.
 """
-function voigt_profile(a::AbstractFloat, v::AbstractFloat, ΔD::Unitful.Quantity)
+function voigt_profile(a::T, v::AbstractFloat, ΔD::T)::T where T <: AbstractFloat
     z = v + a * im
     profile = real(humlicek(z))
     return profile * invSqrtPi / ΔD
@@ -56,17 +56,17 @@ end
 
 
 """
-    dispersion_profile(a::AbstractFloat, v::AbstractFloat, ΔD::Unitful.Quantity)
+    dispersion_profile(a::T, v::AbstractFloat, ΔD::T)::T
 
 Compute the normalised dispersion (or Faraday) profile, given a damping constant `a`,
 dimensionless wavelength or frequency `v`, and Doppler width `ΔD` (wavelength or frequency).
 In the case of wavelength, v = (λ - λ0) / ΔD.
 Uses Humlicek's W4 approximation. Returns in inverse units of ΔD.
 """
-function dispersion_profile(a::AbstractFloat, v::AbstractFloat, ΔλD::Unitful.Length)
+function dispersion_profile(a::T, v::AbstractFloat, ΔD::T)::T where T <: AbstractFloat
     z = v + a * im
     profile = imag(humlicek(z))
-    return profile * invSqrtPi / ΔλD
+    return profile * invSqrtPi / ΔD
 end
 
 
