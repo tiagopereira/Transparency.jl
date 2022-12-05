@@ -131,9 +131,9 @@ end
         @test_throws MethodError humlicek(0.)
     end
     @testset "profiles" begin
-        wave = 1u"nm"
-        @test ustrip(voigt_profile(0.1, 0.5, wave)) ≈ real(humlicek(0.5 + 0.1 *im)) / sqrt(π)
-        @test ustrip(dispersion_profile(0.1, 0.5, wave)) ≈ imag(humlicek(0.5 + 0.1 *im)) / sqrt(π)
+        wave = 1.0
+        @test voigt_profile(0.1, 0.5, wave) ≈ real(humlicek(0.5 + 0.1 *im)) / sqrt(π)
+        @test dispersion_profile(0.1, 0.5, wave) ≈ imag(humlicek(0.5 + 0.1 *im)) / sqrt(π)
         # Symmetry / anti-symmetry
         @test voigt_profile.(0.1, v, wave) == voigt_profile.(0.1, -v, wave)
         @test dispersion_profile.(0.1, v, wave) == -dispersion_profile.(0.1, -v, wave)
