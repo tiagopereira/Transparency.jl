@@ -27,6 +27,9 @@ profile. Valid up to electron densities of 1e19 m^-3 in the chromosphere.
 - `electron_density`: electron density per volume
 - `n_upper`: principal quantum number of upper level
 - `n_lower`: principal quantum number of lower level
+
+# Returns
+- `γ::Unitful.Frequency`: broadening in units of rad / s.
 """
 function γ_stark_linear(
     electron_density::NumberDensity{T},
@@ -42,10 +45,10 @@ function γ_stark_linear(
     end
     γβ = convert(T, 0.425)
     power = convert(T, 2/3)
-    zcoeff = convert(T, 6e-5)u"s^-1"  # should be m^2/s, dropping m to allow ne=ustrip(...)
+    zcoeff = convert(T, 6e-5)u"s^-1"  # should be m^2/s, dropping m^2 to allow ne=ustrip(ne)
     ne = ustrip(electron_density |> u"m^-3")
-    # Factor of 2 to convert from half half-width to half-width
-    return 2 * γβ * a1 * zcoeff * (n_upper^2 - n_lower^2) * ne^power
+    # Conversion factors: 2 from  half half-width to half-width, 2π from 1 / s to rad / s
+    return 2 * 2 * π * u"rad" * γβ * a1 * zcoeff * (n_upper^2 - n_lower^2) * ne^power
 end
 
 
@@ -78,7 +81,7 @@ end
                           mean_atomic_weight::Unitful.Mass=28 * m_u,
                           scaling::Real=1)
 
-Calculate height-independent constant to use in `γ_quadratic_stark`, using the recipe
+Calculate height-independent constant to use in `γ_stark_quadratic`, using the recipe
 from RH, which is based on the following estimate:
 
 \$\$
@@ -97,7 +100,7 @@ function const_stark_quadratic(atomic_mass::Unitful.Mass, χup::Unitful.Energy,
     Cm = ((1 + atomic_mass / m_e)^(1/6) +
           (1 + atomic_mass / mean_atomic_weight)^(1/6))
     C4 = ustrip(c4_traving(χup, χlo, χ∞, Z) |> u"m^4 / s")
-    cStark23 = 11.37u"m^3 / s" * (scaling * C4)^(2/3)
+    cStark23 = 11.37u"m^3 * rad / s" * (scaling * C4)^(2/3)
     return C^(1/6) * cStark23 * Cm
 end
 
@@ -117,7 +120,7 @@ recipe, using the function `const_stark_quadratic`.
 function γ_stark_quadratic(
     electron_density::NumberDensity,
     temperature::Unitful.Temperature;
-    stark_constant::Unitful.VolumeFlow=1.0u"m^3 / s",
+    stark_constant::Unitful.VolumeFlow=1.0u"m^3 * rad / s",
 )
     if temperature > 0u"K"
         t_factor = ustrip(temperature |> u"K")^(1/6)
@@ -149,7 +152,7 @@ function γ_stark_quadratic_gray(
     c4_term = ustrip(c4 |> u"cm^4 / s")
     t_term = ustrip(temperature |> u"K")
     log10γ = 19 + (2/3) * log10(c4_term) + log10(ne_term) + (1/6) * log10(t_term)
-    return (10^log10γ) * u"s^-1"
+    return (10^log10γ) * u"rad / s"
 end
 
 
@@ -187,7 +190,7 @@ end
 Compute van der Waals broadening in Lindholm theory using Unsöld's approximation
 for the interaction coefficient \$C_6\$. Based on Mihalas (1978), pp 282, 286-287.
 Takes the atmosphere-indepenent `unsold_const` from `γ_unsold_const`, temperature,
-and populations of neutral hydrogen, and returns broadening in units of s^-1.
+and populations of neutral hydrogen, and returns broadening in units of rad * s^-1.
 """
 function γ_unsold(
     unsold_const::AbstractFloat,
@@ -195,7 +198,7 @@ function γ_unsold(
     h_neutral_density::NumberDensity
 )
     return (unsold_const * ustrip(temperature |> u"K")^0.3 *
-            ustrip(h_neutral_density |> u"m^-3") * u"s^-1")
+            ustrip(h_neutral_density |> u"m^-3") * u"rad / s")
 end
 
 
@@ -226,7 +229,7 @@ function const_barklem(atomic_mass::Unitful.Mass, α::Real, σ::Real)
     v_ratio = (1e4u"m/s" / v_bar) |> u"m/m"
     # Squared Bohr radius is to convert from atomic units to m^2, factor of 2 from HW to FW
     return (a_0^2 * 2 * (4 / π)^(α / 2) * gamma((4 - α) / 2) * v_bar * σ *
-            v_ratio^α) |> u"m^3 / s"
+            v_ratio^α) |> u"m^3 * rad / s"
 end
 
 
@@ -249,7 +252,7 @@ theory from Barklem/O'Mara/Anstee.
 - `h_neutral_density::NumberDensity`: number density of neutral hydrogen atoms
 
 # Returns
-- `γ::Unitful.Frequency`: broadening in units of s^-1.
+- `γ::Unitful.Frequency`: broadening in units of rad / s.
 
 # Notes
 This computes broadening only from hydrogen atoms. For collisions with helium atoms,
@@ -266,10 +269,10 @@ julia> temp = 6000u"K";
 julia> h_density = 1e23u"m^-3";
 
 julia> bconst = const_barklem(Ca8542.atom_weight, 0.275, 291)
-7.495208174533257e-16 m³ s⁻¹
+7.495208174533257e-16 m³ rad s⁻¹
 
 julia> γ = γ_barklem(0.275, bconst, temp, h_density)
-1.3596876505340942e11 s⁻¹
+1.3596876505340942e11 rad s⁻¹
 ```
 
 Now adding van der Waals broadening for helium as well:
@@ -278,7 +281,7 @@ julia> uconst = const_unsold(Ca8542; H_scaling=0, He_scaling=1)
 2.482484115415461e-16
 
 julia> γ = γ_barklem(0.275, bconst, temp, h_density) + γ_unsold(uconst, temp, h_density)
-1.3630631018876224e11 s⁻¹
+1.3630631018876224e11 rad s⁻¹
 ```
 
 # References
