@@ -221,8 +221,8 @@ with neutral hydrogen using the recipes of Barklem/O'Mara/Anstee, in the functio
    to be multiplied by temperature ^ ((1 - α)/2) to give proper temperature dependence.
 """
 function const_barklem(atomic_mass::Unitful.Mass, α::Real, σ::Real)
-    α < 0 && error("α must be non-negative")
-    σ < 0 && error("σ must be non-negative")
+    α < 0 && throw(DomainError("α must be non-negative"))
+    σ < 0 && throw(DomainError("σ must be non-negative"))
     μ = m_u / (1 / Ar_H + 1 / (atomic_mass / m_u))
     # Using 1 K to keep units right for later multiplication by correct temperature
     v_bar = sqrt(8 * k_B * u"K"/ (π * μ)) |> u"m/s"
@@ -330,7 +330,8 @@ function const_deridder_rensbergen(
     α::Real,
     β::Real,
 )
-    α < 0 && error("α must be non-negative")
+
+    α < 0 && throw(DomainError("α must be non-negative"))
     α = (α * 1e-8u"cm^3/s") |> u"m^3/s"  # Convert from paper's 1e-8 units to SI
     mass_corr = (1 + atomic_mass_pert / atomic_mass_rad) ^ β
     return α * mass_corr

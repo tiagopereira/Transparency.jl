@@ -155,12 +155,12 @@ end
         @test γ_unsold(1.0, 1000u"K", 1u"m^-3") ≈ (1000^0.3)u"s^-1"
         @test const_barklem(m_u * 1, 0.3, 300) ≈ 1.0853795252714703e-15u"m^3 / s"
         @test const_barklem(m_u * 1, 1, 2) == 2 * const_barklem(m_u * 1, 1, 1)
-        @test_throws ErrorException const_barklem(m_u * 1, 1, -1)
-        @test_throws ErrorException const_barklem(m_u * 1, -1, 1)
+        @test_throws DomainError const_barklem(m_u * 1, 1, -1)
+        @test_throws DomainError const_barklem(m_u * 1, -1, 1)
         @test γ_barklem(0.3, 123u"m^3/s", 1u"K", 1u"m^-3") == 123.0u"s^-1"
         @test γ_barklem(0.3, 1e-16u"m^3/s", 6000u"K", 1e23u"m^-3") ≈ 2.100646320154e8u"s^-1"
         @test const_deridder_rensbergen(m_u * 1, m_u * 1, 3, 1) ≈ 3*2e-14u"m^3/s"
-        @test_throws ErrorException const_deridder_rensbergen(m_u * 1, m_u * 1, -1, 1)
+        @test_throws DomainError const_deridder_rensbergen(m_u * 1, m_u * 1, -1, 1)
         @test γ_deridder_rensbergen(0.5, 2e-14u"m^3/s", 6000u"K", 1e22u"m^-3") ≈
             1.5491933384829668e10u"s^-1"
         @test γ_deridder_rensbergen(0.5, 1u"m^3/s", 1e3u"K", 1u"m^-3") ≈ sqrt(1e3)u"s^-1"
